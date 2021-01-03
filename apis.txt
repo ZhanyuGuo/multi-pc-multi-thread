@@ -1,0 +1,91 @@
+#include<sys/socket.h>
+int socket(int family,int type,int protocal)
+参数      
+        family:     AF_INET             <IPv4协议>
+                    AF_INET6            <IPv6协议>
+                    AF_LOCAL            <UNIX域协议>
+                    AF_ROUTE            <路由套接字>
+                    AF_KEY              <密钥套接字>
+        type:       SOCK_STREAM         <流式套接字，TCP>
+                    SOCK_DGREAM         <数据报套接字,UDP>
+                    SOCK_RAM            <原始套接字>
+        protocal:   原始套接字<TCP,UDP填0>
+返回值
+        成功：非负套接字描述符
+        出错：-1
+
+#include<sys/socket.h>
+#include<sys/types.h>
+int bind(int sockfd,struct sockaddr *addr,int addrlen)  
+参数
+        sockfd      套接字描述符
+        addr        绑定的地址,通用地址结构体
+        addlen      地址长度
+返回
+        成功： 0
+        出错：-1
+补充
+        struct sockaddr{
+            sa_family_t sa_family;  //协议族
+            char    sa_data[14];    //地址信息
+        };/**通用地址结构体定义**/   
+
+        struct sockaddr_in{
+            sa_family_t sin_fanily; //协议族.一般写AF_INET
+            in_port_t   sin_port;   //端口号. htons(0),随机分配端口号
+            struct in_addr sin_addr;//IP地址. htonl(INADDR_ANY),0.0.0.0
+        };/**IPv4协议族地址格式，调用bin函数需要类型转换**/
+
+
+        struct in_addr{
+            uint32_t s_addr;    //IP
+        };
+
+#include<sys/socket.h>
+int listen(int sockfd,int backlog)
+参数
+        sockfd      套接字描述符
+        backlog     请求队列最大请求数
+返回
+        成功： 0
+        出错：-1
+
+#include<sys/socket.h>
+int connect(int sockfd,struct sockaddr *serv_addr,int addrlen)
+参数
+        sockfd      套接字描述符
+        serv_addr   服务器地址
+        addrlen     地址长度
+
+#include<sys/socket.h>
+int accept(int sockfd,struct sockaddr *addr,socklen_t *addrlen)
+参数
+        sockfd      套接字描述符
+        addr        客户端地址信息保存结构体
+        addrlen     客户端地址长度
+返回
+        成功： 0
+        失败：-1
+
+#include<sys/socket.h>
+int send(int sockfd,const void *buf,int len,int flags)
+参数
+        sockfd      套接字描述符
+        buf         发送缓冲区首地址
+        len         发送数据长度
+        flags       一般为0
+返回
+        成功：实际发送的字节数
+        失败：-1
+
+#include<sys/socket.h>
+int recv(int sockfd,const void *buf,int len,int flags)
+参数
+        sockfd      套接字描述符
+        buf         接收缓冲区首地址
+        len         接收数据长度
+        flags       一般为0
+返回
+        成功：实际接收的字节数
+        失败：-1
+
