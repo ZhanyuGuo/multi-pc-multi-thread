@@ -7,137 +7,8 @@
  * Note: Single process || Multi-PC-multi-process.
  * 
  * -----------------------------------------*/
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <pthread.h>
-#include <string.h>
-#include <unistd.h>
-#include <math.h>
-
-// 网络相关
-#define PORT        8888  // 端口号：8888
-#define BUF_LEN     1024  // 缓存长度：1kB
-#define SERVER_IP   "127.0.0.1"  // 服务端IP地址
-
-// 线程相关
-#define MAX_THREADS         64          // 线程数：64
-#define SUBDATANUM          2000000     // 子块数据量：2000000
-#define SRV_SUBDATANUM      1000000     // 单PC数据
-#define CLT_SUBDATANUM      1000000     // 单PC数据
-#define DATANUM             (SUBDATANUM*MAX_THREADS)  // 总数据量：线程数x子块数据量
-
-#define S_SUBDATANUM        2000000         // 由于排序找不到比较快的办法，先减少数据量进行测试
-#define S_SRV_SUBDATANUM    1000000         // 单PC小数据量测试
-#define S_CLT_SUBDATANUM    1000000         // 单PC小数据量测试
-#define S_DATANUM           (S_SUBDATANUM*MAX_THREADS)  // 总数据量(小)：线程数x子块数据量
-#define S_CLT_DATANUM       (S_CLT_SUBDATANUM*MAX_THREADS)
-
-#define S_ONCE              8000                    // 一次发送8000个浮点数
-#define S_TIMES             (S_CLT_DATANUM/S_ONCE)  // 总共发送8000个的次数
-#define S_LEFT              (S_CLT_DATANUM%S_ONCE)  // 发送剩余不足8000个的数据
-
-#define DATA_MAX            2147483647  // 随机数可能产生的最大值
-
-// 网络收发缓存
-char buf[BUF_LEN];
-
-// 计算变量
-double rawDoubleData[DATANUM];      // 原始数据
-double doubleResults[MAX_THREADS];  // 各线程结果
-double finalSum;                    // 求和最终结果
-double finalMax;                    // 求最大值最终结果
-
-double S_rawDoubleData[S_DATANUM];
-double S_sortDoubleData[S_DATANUM];     // 排序最终结果
-double S_CLT_sortDoubleData[S_CLT_DATANUM];     // 排序最终结果
-double S_threadResult[MAX_THREADS][S_CLT_SUBDATANUM];
-
-// 标志位
-bool thread_begin;          // 线程发令标志
-
-// 不加速版本求和
-double NewSum(const double data[], const int len)
-{
-    double rlt = 0.0f;
-
-    for (int i = 0; i < len; i++) rlt += log10(sqrt(data[i]/4.0));
-    
-    return rlt;
-}
-
-// 不加速版本求最大值
-double NewMax(const double data[], const int len)
-{
-    double max = log10(sqrt(data[0]/4.0));
-
-    for (int i = 1; i < len; i++) if (log10(sqrt(data[i]/4.0)) > max) max = log10(sqrt(data[i]/4.0));
-
-    return max;
-}
-
-// 单纯求最大值
-double NewMax2(const double data[], const int len)
-{
-    double max = data[0];
-
-    for (int i = 1; i < len; i++) if (data[i] > max) max = data[i];
-
-    return max;
-}
-
-// 加速版本求和
-double NewSumSpeedUp(const double data[], const int len)
-{
-    double rlt = 0.0f;
-
-    return rlt;
-}
-
-void qsort(double s[], int l, int r)
-{
-    if (l < r)
-    {
-        int i = l, j = r;
-        double x = s[i];
-        while (i < j)
-        {
-            while (i < j && s[j] >= x)
-            {
-                j--;
-            }
-            if (i < j)
-            {
-                s[i++] = s[j];
-            }
-            while (i < j && s[i] < x)
-            {
-                i++;
-            }
-            if (i < j)
-            {
-                s[j--] = s[i];
-            }           
-        }
-        s[i] = x;
-        qsort(s, l, i - 1);
-        qsort(s, i + 1, r);
-    }
-}
-
-double NewSort(const double data[], const int len, double result[])
-{
-    int l = 0, r = len - 1;
-    for (int i = 0; i < len; i++)
-    {
-        result[i] = data[i];
-    }
-    qsort(result, l, r);
-}
+#define CLIENT
+#include "mySrvClt.h"
 
 void merge()
 {
@@ -166,23 +37,6 @@ void merge()
         S_CLT_sortDoubleData[j] = min_num;
         index[min_index]++;
     }
-}
-
-int check(const double data[], const int len)
-{
-    double sign;
-    double new_sign;
-    sign = data[1] - data[0];
-    for (int i = 1; i < len - 1; i++)
-    {
-        new_sign = data[i + 1] - data[i];
-        if (new_sign*sign < 0)
-        {
-            return 0;
-        }
-    }
-
-    return 1;
 }
 
 void* fnThreadSum(void *arg)
@@ -250,7 +104,6 @@ int main(int argc, char const *argv[])
 
     // 初始化数据
     srand(1);
-    // for (int i = 0; i < DATANUM; i++) rawDoubleData[i] = double(i + 1);
     for (int i = 0; i < DATANUM; i++) 
     {
         rawDoubleData[i] = fabs(double(rand() + rand() + rand() + rand()));
@@ -271,7 +124,7 @@ int main(int argc, char const *argv[])
     // ------------------------ SUM begin ------------------------
     finalSum = 0.0f;
     gettimeofday(&startv, &startz);
-    // finalSum = NewSum(rawDoubleData, DATANUM);
+    finalSum = NewSum(rawDoubleData, DATANUM);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     printf("Single Process[SUM](Client): answer = %lf, time = %ld us\r\n", finalSum, t_usec);
@@ -280,7 +133,7 @@ int main(int argc, char const *argv[])
     // ------------------------ MAX begin ------------------------
     finalMax = 0.0f;
     gettimeofday(&startv, &startz);
-    // finalMax = NewMax(rawDoubleData, DATANUM);
+    finalMax = NewMax(rawDoubleData, DATANUM);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     printf("Single Process[MAX](Client): answer = %lf, time = %ld us\r\n", finalMax, t_usec);
@@ -360,14 +213,14 @@ int main(int argc, char const *argv[])
     pthread_attr_setstacksize(&attr, stacksize);
     
     // ------------------------ SUM begin ------------------------
-    // thread_begin = false;
-    // for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSum, &id[i]);
+    thread_begin = false;
+    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSum, &id[i]);
 
-    // // 给多个线程同时发令
-    // thread_begin = true;
+    // 给多个线程同时发令
+    thread_begin = true;
 
-    // // 等待线程运行结束
-    // for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
+    // 等待线程运行结束
+    for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
 
     // 收割
     for (int i = 0; i < MAX_THREADS; i++) cltSum += doubleResults[i];
@@ -382,12 +235,12 @@ int main(int argc, char const *argv[])
     // ------------------------ SUM end --------------------------
 
     // ------------------------ MAX begin ------------------------
-    // thread_begin = false;
-    // for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadMax, &id[i]);
+    thread_begin = false;
+    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadMax, &id[i]);
 
-    // thread_begin = true;
+    thread_begin = true;
 
-    // for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
+    for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
 
     cltMax = NewMax2(doubleResults, MAX_THREADS);
     printf("Client max = %f\r\n", cltMax);
@@ -422,6 +275,13 @@ int main(int argc, char const *argv[])
     //     printf("send result failed...\r\n");
     //     return -1;
     // }
+    memset(buf, 0, BUF_LEN);
+    if ((recv_len = recv(client_fd, buf, BUF_LEN, 0)) < 0)
+    {
+        printf("client recv failed...\r\n");
+        return -1;
+    }
+    printf("# Received: %s\r\n", buf);
 
     double *p = S_CLT_sortDoubleData;
     for (int i = 0; i < S_TIMES; i++)
@@ -431,7 +291,7 @@ int main(int argc, char const *argv[])
             printf("send result failed...\r\n");
             return -1;
         }
-        printf("%d, %lf\r\n", send_len, *p);
+        // printf("%d, %lf\r\n", send_len, *p);
         p += S_ONCE;
     }
     if (S_LEFT)
@@ -441,7 +301,7 @@ int main(int argc, char const *argv[])
             printf("send result failed...\r\n");
             return -1;
         }
-        printf("%d, %lf\r\n", send_len, *p);
+        // printf("%d, %lf\r\n", send_len, *p);
     }
     
     
