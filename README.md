@@ -11,15 +11,16 @@ Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN�
 
 #### 安装教程
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+1.  编译myServer.cpp
+2.  编译myClient.cpp
+3.  注意在编译中加入，以解决线程库问题："-lpthread"
+4.  注意在编译中加入，以解决内存不足的问题："-mcmodel=large"
 
 #### 使用说明
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+1.  先运行myServer: $ ./myServer
+2.  待myServer将单线程算完以后，开启网络监听。
+3.  再运行myClient: $ ./myClient
 
 #### 参与贡献
 
