@@ -30,11 +30,15 @@
 #define DATANUM         (SUBDATANUM*MAX_THREADS)  // 总数据量：线程数x子块数据量
 
 #define S_SUBDATANUM        2000000         // 由于排序找不到比较快的办法，先减少数据量进行测试
-#define S_SRV_SUBDATANUM    1000000          // 单PC小数据量测试
-#define S_CLT_SUBDATANUM    1000000          // 单PC小数据量测试
+#define S_SRV_SUBDATANUM    1000000         // 单PC小数据量测试
+#define S_CLT_SUBDATANUM    1000000         // 单PC小数据量测试
 #define S_DATANUM           (S_SUBDATANUM*MAX_THREADS)  // 总数据量(小)：线程数x子块数据量
 #define S_SRV_DATANUM       (S_SRV_SUBDATANUM*MAX_THREADS)
 #define S_CLT_DATANUM       (S_CLT_SUBDATANUM*MAX_THREADS)
+
+#define S_ONCE              8000                    // 一次发送8000个浮点数
+#define S_TIMES             (S_CLT_DATANUM/S_ONCE)  // 总共发送8000个的次数
+#define S_LEFT              (S_CLT_DATANUM%S_ONCE)  // 发送剩余不足8000个的数据
 
 #define DATA_MAX            2147483647  // 随机数可能产生的最大值
 
@@ -48,9 +52,9 @@ double finalSum;                    // 求和最终结果
 double finalMax;                    // 求最大值最终结果
 
 double S_rawDoubleData[S_DATANUM];
-double S_sortDoubleData[S_DATANUM];     // 排序最终结果
-double S_SRV_sortDoubleData[S_SRV_DATANUM];     // 排序最终结果
-double S_CLT_sortDoubleData[S_CLT_DATANUM];     // 排序最终结果
+double S_sortDoubleData[S_DATANUM];             // 排序最终结果
+double S_SRV_sortDoubleData[S_SRV_DATANUM];     // SRV排序最终结果
+double S_CLT_sortDoubleData[S_CLT_DATANUM];     // CLT排序最终结果
 double S_threadResult[MAX_THREADS][S_SRV_SUBDATANUM];
 
 // 标志位
@@ -301,7 +305,7 @@ int main(int argc, char const *argv[])
     // ------------------------ SUM begin ------------------------
     finalSum = 0.0f;
     gettimeofday(&startv, &startz);
-    finalSum = NewSum(rawDoubleData, DATANUM);
+    // finalSum = NewSum(rawDoubleData, DATANUM);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     printf("Single Process[SUM](Server): answer = %lf, time = %ld us\r\n", finalSum, t_usec);
@@ -310,7 +314,7 @@ int main(int argc, char const *argv[])
     // ------------------------ MAX begin ------------------------
     finalMax = 0.0f;
     gettimeofday(&startv, &startz);
-    finalMax = NewMax(rawDoubleData, DATANUM);
+    // finalMax = NewMax(rawDoubleData, DATANUM);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     printf("Single Process[MAX](Server): answer = %lf, time = %ld us\r\n", finalMax, t_usec);
@@ -405,15 +409,15 @@ int main(int argc, char const *argv[])
     pthread_attr_setstacksize(&attr, stacksize);
 
     // ------------------------ SUM begin ------------------------
-    thread_begin = false;
-    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSum, &id[i]);
+    // thread_begin = false;
+    // for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSum, &id[i]);
 
-    // 给多个线程同时发令
-    gettimeofday(&startv, &startz);
-    thread_begin = true;
+    // // 给多个线程同时发令
+    // gettimeofday(&startv, &startz);
+    // thread_begin = true;
 
     // 等待线程运行结束
-    for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
+    // for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
 
     // 收割
     for (int i = 0; i < MAX_THREADS; i++) srvSum += doubleResults[i];
@@ -430,15 +434,15 @@ int main(int argc, char const *argv[])
     // ------------------------ SUM end --------------------------
 
     // ------------------------ MAX begin ------------------------
-    thread_begin = false;
-    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadMax, &id[i]);
+    // thread_begin = false;
+    // for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadMax, &id[i]);
 
-    // 给多个线程同时发令
-    gettimeofday(&startv, &startz);
-    thread_begin = true;
+    // // 给多个线程同时发令
+    // gettimeofday(&startv, &startz);
+    // thread_begin = true;
 
-    // 等待线程运行结束
-    for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
+    // // 等待线程运行结束
+    // for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
 
     // 收割
     srvMax = NewMax2(doubleResults, MAX_THREADS);
@@ -460,6 +464,11 @@ int main(int argc, char const *argv[])
     // ------------------------ MAX end --------------------------
     
     // ----------------------- SORT begin ------------------------
+    /* -----------------------------------------------------------
+     * 注意：TCP在单机网上一次最大传输65536字节，即8192个浮点数
+     * 
+     * 在局域网内根据网卡，一次最大传输1500字节，即187个浮点数
+     * -------------------------------------------------------- */
     thread_begin = false;
     for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSort, &id[i]);
 
@@ -471,20 +480,47 @@ int main(int argc, char const *argv[])
     merge();
     checkRlt = check(S_SRV_sortDoubleData, S_SRV_DATANUM);
     printf("Srv sort = %d\r\n", checkRlt);
-    if ((recv_len = recv(client_fd, S_CLT_sortDoubleData, S_CLT_DATANUM*sizeof(double), 0)) < 0)
-    {
-        printf("receive client result failed...\r\n");
-        return -1;
-    }
 
-    // printf("%ld\r\n", sizeof(S_CLT_sortDoubleData)/sizeof(double));
+    // if ((recv_len = recv(client_fd, S_CLT_sortDoubleData, S_CLT_DATANUM*sizeof(double), 0)) < 0)
+    // {
+    //     printf("receive client result failed...\r\n");
+    //     return -1;
+    // }
+
     // for (int i = 0; i < S_CLT_DATANUM; i++)
     // {
+    //     if (!S_CLT_sortDoubleData[i])
+    //     {
+    //         printf("%d\r\n", i);
+    //         break;
+    //     }
+        
     //     printf("%lf\r\n", S_CLT_sortDoubleData[i]);
     // }
+
+    double *p = S_CLT_sortDoubleData;
+    for (int i = 0; i < S_TIMES; i++)
+    {
+        if ((recv_len = recv(client_fd, p, S_ONCE*sizeof(double), 0)) < 0)
+        {
+            printf("receive client result failed...\r\n");
+            return -1;
+        }
+        printf("%d, %lf\r\n", recv_len, *p);
+        p += S_ONCE;
+    }
+    if (S_LEFT)
+    {
+        if ((recv_len = recv(client_fd, p, S_LEFT*sizeof(double), 0)) < 0)
+        {
+            printf("receive result failed...\r\n");
+            return -1;
+        }
+        printf("%d, %lf\r\n", recv_len, *p);
+    }
     
     merge2();
-    // for (int i = 0; i < S_DATANUM; i++)
+    // for (int i = 0; i < 16450; i++)
     // {
     //     printf("%lf\r\n", S_sortDoubleData[i]);
     // }
