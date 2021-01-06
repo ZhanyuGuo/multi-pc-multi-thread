@@ -13,34 +13,34 @@
 
 double rawDoubleData[DATANUM];
 double sortDoubleData[DATANUM];
-// double tmpDoubleData[DATANUM];
+double tmpDoubleData[DATANUM];
 double rlt[MAX_THREADS][SUBDATANUM];
 
-// double* doubleResults[MAX_THREADS];
+double* doubleResults[MAX_THREADS];
 bool thread_flag = false;
-// double perThreadResult[MAX_THREADS][SUBDATANUM];
+double perThreadResult[MAX_THREADS][SUBDATANUM];
 
-// double* NewSort(const double data[], const int len, double result[])
-// {
-//     double tmp;
-//     // for (m = 0; m < len; m++) result[m] = data[m];
-//     for (int i = 0; i < len; i++) result[i] = data[i];
+double* NewSort(const double data[], const int len, double result[])
+{
+    double tmp;
+    // for (m = 0; m < len; m++) result[m] = data[m];
+    for (int i = 0; i < len; i++) result[i] = data[i];
     
-//     for (int i = 0; i < len; i++)
-//     {
-//         for (int j = 0; j < len - i - 1; j++)
-//         {
-//             if (log10(sqrt(result[j])) > log10(sqrt(result[j + 1])))
-//             {
-//                 tmp = result[j];
-//                 result[j] = result[j + 1];
-//                 result[j+1] = tmp;
-//             }
-//         }
-//     }
+    for (int i = 0; i < len; i++)
+    {
+        for (int j = 0; j < len - i - 1; j++)
+        {
+            if (log10(sqrt(result[j])) > log10(sqrt(result[j + 1])))
+            {
+                tmp = result[j];
+                result[j] = result[j + 1];
+                result[j+1] = tmp;
+            }
+        }
+    }
 
-//     return result;
-// }
+    return result;
+}
 
 // double NewSort(const double data[], const int len, double result[])
 // {
@@ -64,60 +64,45 @@ bool thread_flag = false;
 //     return 1.0;
 // }
 
-void qsort(double s[], int l, int r)
-{
-    if (l < r)
-    {
-        int i = l, j = r;
-        double x = s[i];
-        while (i < j)
-        {
-            while (i < j && s[j] >= x)
-            {
-                j--;
-            }
-            if (i < j)
-            {
-                s[i++] = s[j];
-            }
-            while (i < j && s[i] < x)
-            {
-                i++;
-            }
-            if (i < j)
-            {
-                s[j--] = s[i];
-            }           
-        }
-        s[i] = x;
-        qsort(s, l, i - 1);
-        qsort(s, i + 1, r);
-    }
-}
-
-double NewSort(const double data[], const int len, double result[])
-{
-    int l = 0, r = len - 1;
-    for (int i = 0; i < len; i++)
-    {
-        result[i] = data[i];
-    }
-    qsort(result, l, r);
-}
-
-// void* threadFunc(void* id)
+// void qsort(double s[], int l, int r)
 // {
-//     int who = *(int *)id;
-   
-//     int startIndex = who*SUBDATANUM;
-//     int endIndex = startIndex + SUBDATANUM;
+//     if (l < r)
+//     {
+//         int i = l, j = r;
+//         double x = s[i];
+//         while (i < j)
+//         {
+//             while (i < j && s[j] >= x)
+//             {
+//                 j--;
+//             }
+//             if (i < j)
+//             {
+//                 s[i++] = s[j];
+//             }
+//             while (i < j && s[i] < x)
+//             {
+//                 i++;
+//             }
+//             if (i < j)
+//             {
+//                 s[j--] = s[i];
+//             }           
+//         }
+//         s[i] = x;
+//         qsort(s, l, i - 1);
+//         qsort(s, i + 1, r);
+//     }
+// }
 
-//     double data[SUBDATANUM];
-//     for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawDoubleData[i];
-    
-//     while (!thread_flag) {}
-
-//     doubleResults[who] = NewSort(data, SUBDATANUM, perThreadResult[who]);
+// double NewSort(const double data[], const int len, double result[])
+// {
+//     int l = 0, r = len - 1;
+//     for (int i = 0; i < len; i++)
+//     {
+//         result[i] = data[i];
+//     }
+//     qsort(result, l, r);
 // }
 
 void* threadFunc(void* id)
@@ -128,13 +113,28 @@ void* threadFunc(void* id)
     int endIndex = startIndex + SUBDATANUM;
 
     double data[SUBDATANUM];
-    
     for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawDoubleData[i];
     
     while (!thread_flag) {}
 
-    NewSort(data, SUBDATANUM, rlt[who]);
+    doubleResults[who] = NewSort(data, SUBDATANUM, perThreadResult[who]);
 }
+
+// void* threadFunc(void* id)
+// {
+//     int who = *(int *)id;
+   
+//     int startIndex = who*SUBDATANUM;
+//     int endIndex = startIndex + SUBDATANUM;
+
+//     double data[SUBDATANUM];
+    
+//     for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawDoubleData[i];
+    
+//     while (!thread_flag) {}
+
+//     NewSort(data, SUBDATANUM, rlt[who]);
+// }
 
 // void merge(double *a, int alen, double *b, int blen, double *result){
 //     int i=0,j=0,t=0;
@@ -196,7 +196,7 @@ int main()
     
     // single-thread
     gettimeofday(&startv, &startz);
-    NewSort(rawDoubleData, DATANUM, sortDoubleData);
+    // NewSort(rawDoubleData, DATANUM, sortDoubleData);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     printf("test_1: cost = %ld us\r\n",t_usec);

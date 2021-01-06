@@ -15,7 +15,7 @@
 #include "emmintrin.h"  //sse2
 #include "tmmintrin.h"  //sse3
 #include "immintrin.h"  //好像包括了所有
-// #include <stdint.h>
+#include <stdint.h>
 
 // 网络相关
 #define PORT        8888            // 端口号：8888
@@ -52,28 +52,28 @@
 char buf[BUF_LEN];
 
 // 计算变量
-float rawFloatData[DATANUM];      // 原始数据
-float floatResults[MAX_THREADS];  // 各线程结果
-float finalSum;                    // 求和最终结果
-float finalMax;                    // 求最大值最终结果
+double rawDoubleData[DATANUM];      // 原始数据
+double doubleResults[MAX_THREADS];  // 各线程结果
+double finalSum;                    // 求和最终结果
+double finalMax;                    // 求最大值最终结果
 
-float S_rawFloatData[S_DATANUM];
-float S_sortFloatData[S_DATANUM];             // 排序最终结果
-float S_CLT_sortFloatData[S_CLT_DATANUM];     // CLT排序最终结果
-float S_threadResult[MAX_THREADS][S_SRV_SUBDATANUM];
-float S_threadResult0[MAX_THREADS][S_SUBDATANUM];
+double S_rawDoubleData[S_DATANUM];
+double S_sortDoubleData[S_DATANUM];             // 排序最终结果
+double S_CLT_sortDoubleData[S_CLT_DATANUM];     // CLT排序最终结果
+double S_threadResult[MAX_THREADS][S_SRV_SUBDATANUM];
+double S_threadResult0[MAX_THREADS][S_SUBDATANUM];
 
 #ifdef SERVER
-float S_SRV_sortFloatData[S_SRV_DATANUM];     // SRV排序最终结果
+double S_SRV_sortDoubleData[S_SRV_DATANUM];     // SRV排序最终结果
 #endif
 
 // 标志位
 bool thread_begin;          // 线程发令标志
 
 // 不加速版本求和
-float NewSum(const float data[], const int len)
+double NewSum(const double data[], const int len)
 {
-    float rlt = 0.0f;
+    double rlt = 0.0f;
 
     for (int i = 0; i < len; i++) rlt += sqrtf(sqrtf(data[i]/4.0));
     
@@ -81,22 +81,22 @@ float NewSum(const float data[], const int len)
 }
 
 // SSE加速求和
-float NewSumSSE(const float* pbuf, const int len)
+double NewSumSSE(const double* pbuf, const int len)
 {
-    float sum = 0;
-    size_t blockwidth = 4;
+    double sum = 0;
+    size_t blockwidth = 2;
     size_t cntblock = len/blockwidth;
-    const float* p = pbuf;
-    const float* q;
-    __m128 xfsload;
-    __m128 xfssum = _mm_setzero_ps();
+    const double* p = pbuf;
+    const double* q;
+    __m128d xfsload;
+    __m128d xfssum = _mm_setzero_pd();
     for (size_t i = 0; i < cntblock; i++)
     {
-        xfsload = _mm_sqrt_ps(_mm_sqrt_ps(_mm_load_ps(p)));//抓两个出来
-        xfssum = _mm_add_ps(xfssum, xfsload);
-        p += 4;
+        xfsload = _mm_sqrt_pd(_mm_sqrt_pd(_mm_load_pd(p)));//抓两个出来
+        xfssum = _mm_add_pd(xfssum, xfsload);
+        p += 2;
     }
-    q = (const float*)&xfssum;
+    q = (const double*)&xfssum;
     for (size_t i = 0; i < blockwidth ; i++)
     {
         sum += q[i];
@@ -105,9 +105,9 @@ float NewSumSSE(const float* pbuf, const int len)
 }
 
 // 不加速版本求最大值
-float NewMax(const float data[], const int len)
+double NewMax(const double data[], const int len)
 {
-    float max = sqrtf(sqrtf(data[0]/4.0));
+    double max = sqrtf(sqrtf(data[0]/4.0));
 
     for (int i = 1; i < len; i++) if (sqrtf(sqrtf(data[i]/4.0)) > max) max = sqrtf(sqrtf(data[i]/4.0));
 
@@ -115,21 +115,21 @@ float NewMax(const float data[], const int len)
 }
 
 // 单纯求最大值
-float NewMax2(const float data[], const int len)
+double NewMax2(const double data[], const int len)
 {
-    float max = data[0];
+    double max = data[0];
 
     for (int i = 1; i < len; i++) if (data[i] > max) max = data[i];
 
     return max;
 }
 
-void qsort(float s[], int l, int r)
+void qsort(double s[], int l, int r)
 {
     if (l < r)
     {
         int i = l, j = r;
-        float x = s[i];
+        double x = s[i];
         while (i < j)
         {
             while (i < j && s[j] >= x)
@@ -155,7 +155,7 @@ void qsort(float s[], int l, int r)
     }
 }
 
-float NewSort(const float data[], const int len, float result[])
+double NewSort(const double data[], const int len, double result[])
 {
     int l = 0, r = len - 1;
     for (int i = 0; i < len; i++)
@@ -165,10 +165,10 @@ float NewSort(const float data[], const int len, float result[])
     qsort(result, l, r);
 }
 
-int check(const float data[], const int len)
+int check(const double data[], const int len)
 {
-    float sign;
-    float new_sign;
+    double sign;
+    double new_sign;
     sign = data[1] - data[0];
     for (int i = 1; i < len - 1; i++)
     {

@@ -8,7 +8,7 @@
  *
  * -----------------------------------------*/
 #define SERVER
-#include "mySrvClt.h"
+#include "mySrvClt copy.h"
 
 void merge()
 {
@@ -20,7 +20,7 @@ void merge()
     int min_index;
     for (int j = 0; j < S_SRV_DATANUM; j++)
     {
-        float min_num = sqrtf(sqrtf(DATA_MAX));
+        double min_num = sqrtf(sqrtf(DATA_MAX));
         for (int i = 0; i < MAX_THREADS; i++)
         {
             if (index[i] > S_SRV_SUBDATANUM - 1)
@@ -34,7 +34,7 @@ void merge()
                 min_num = S_threadResult[i][index[i]];
             }
         }
-        S_SRV_sortFloatData[j] = min_num;
+        S_SRV_sortDoubleData[j] = min_num;
         index[min_index]++;
     }
 }
@@ -49,7 +49,7 @@ void merge0()
     int min_index;
     for (int j = 0; j < S_DATANUM; j++)
     {
-        float min_num = sqrtf(sqrtf(DATA_MAX));
+        double min_num = sqrtf(sqrtf(DATA_MAX));
         for (int i = 0; i < MAX_THREADS; i++)
         {
             if (index[i] > S_SUBDATANUM - 1)
@@ -63,7 +63,7 @@ void merge0()
                 min_num = S_threadResult0[i][index[i]];
             }
         }
-        S_sortFloatData[j] = min_num;
+        S_sortDoubleData[j] = min_num;
         index[min_index]++;
     }
 }
@@ -73,30 +73,30 @@ void merge2()
     int srv = 0, clt = 0, cnt = 0;
     while (srv < S_SRV_DATANUM && clt < S_CLT_DATANUM)
     {
-        if (S_SRV_sortFloatData[srv] < S_CLT_sortFloatData[clt])
+        if (S_SRV_sortDoubleData[srv] < S_CLT_sortDoubleData[clt])
         {
-            S_sortFloatData[cnt++] = S_SRV_sortFloatData[srv++];
+            S_sortDoubleData[cnt++] = S_SRV_sortDoubleData[srv++];
         }
         else
         {
-            S_sortFloatData[cnt++] = S_CLT_sortFloatData[clt++];
+            S_sortDoubleData[cnt++] = S_CLT_sortDoubleData[clt++];
         }
-        // printf("%f\r\n", S_sortFloatData[cnt - 1]);
+        // printf("%f\r\n", S_sortDoubleData[cnt - 1]);
     }
     if (srv >= S_SRV_DATANUM)
     {
         while (cnt < S_DATANUM)
         {
-            S_sortFloatData[cnt++] = S_CLT_sortFloatData[clt++];
-            // printf("%f\r\n", S_sortFloatData[cnt - 1]);
+            S_sortDoubleData[cnt++] = S_CLT_sortDoubleData[clt++];
+            // printf("%f\r\n", S_sortDoubleData[cnt - 1]);
         }
     }
     else
     {
         while (cnt < S_DATANUM)
         {
-            S_sortFloatData[cnt++] = S_SRV_sortFloatData[srv++];
-            // printf("%f\r\n", S_sortFloatData[cnt - 1]);
+            S_sortDoubleData[cnt++] = S_SRV_sortDoubleData[srv++];
+            // printf("%f\r\n", S_sortDoubleData[cnt - 1]);
         }
     }
 }
@@ -104,19 +104,19 @@ void merge2()
 void* fnThreadSum0(void *arg)
 {
     int who = *(int *)arg;    // 线程ID
-    float data[SUBDATANUM];  // 线程数据
+    double data[SUBDATANUM];  // 线程数据
 
     // 索引
     int startIndex = who*SUBDATANUM;
     int endIndex = startIndex + SUBDATANUM;
 
-    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawFloatData[i];
+    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawDoubleData[i];
 
     // 等待发令
     while (!thread_begin) {}
 
     // 存储结果
-    floatResults[who] = NewSum(data, SUBDATANUM);
+    doubleResults[who] = NewSumSSE(data, SUBDATANUM);
 
     return NULL;
 }
@@ -124,19 +124,19 @@ void* fnThreadSum0(void *arg)
 void* fnThreadMax0(void *arg)
 {
     int who = *(int *)arg;        // 线程ID
-    float data[SUBDATANUM];  // 线程数据
+    double data[SUBDATANUM];  // 线程数据
 
     // 索引
     int startIndex = who*SUBDATANUM;
     int endIndex = startIndex + SUBDATANUM;
 
-    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawFloatData[i];
+    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawDoubleData[i];
 
     // 等待发令
     while (!thread_begin) {}
 
     // 存储结果
-    floatResults[who] = NewMax(data, SUBDATANUM);
+    doubleResults[who] = NewMax(data, SUBDATANUM);
 
     return NULL;
 }
@@ -144,13 +144,13 @@ void* fnThreadMax0(void *arg)
 void* fnThreadSort0(void* arg)
 {
     int who = *(int *)arg;
-    float data[S_SUBDATANUM];
+    double data[S_SUBDATANUM];
 
     // 索引
     int startIndex = who*S_SUBDATANUM;
     int endIndex = startIndex + S_SUBDATANUM;
 
-    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = S_rawFloatData[i];
+    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = S_rawDoubleData[i];
 
     while (!thread_begin) {}
 
@@ -160,19 +160,19 @@ void* fnThreadSort0(void* arg)
 void* fnThreadSum(void *arg)
 {
     int who = *(int *)arg;        // 线程ID
-    float data[SRV_SUBDATANUM];  // 线程数据
+    double data[SRV_SUBDATANUM];  // 线程数据
 
     // 索引
     int startIndex = who*SRV_SUBDATANUM;
     int endIndex = startIndex + SRV_SUBDATANUM;
 
-    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawFloatData[i];
+    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawDoubleData[i];
 
     // 等待发令
     while (!thread_begin) {}
 
     // 存储结果
-    floatResults[who] = NewSum(data, SRV_SUBDATANUM);
+    doubleResults[who] = NewSumSSE(data, SRV_SUBDATANUM);
 
     return NULL;
 }
@@ -180,19 +180,19 @@ void* fnThreadSum(void *arg)
 void* fnThreadMax(void *arg)
 {
     int who = *(int *)arg;        // 线程ID
-    float data[SRV_SUBDATANUM];  // 线程数据
+    double data[SRV_SUBDATANUM];  // 线程数据
 
     // 索引
     int startIndex = who*SRV_SUBDATANUM;
     int endIndex = startIndex + SRV_SUBDATANUM;
 
-    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawFloatData[i];
+    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawDoubleData[i];
 
     // 等待发令
     while (!thread_begin) {}
 
     // 存储结果
-    floatResults[who] = NewMax(data, SRV_SUBDATANUM);
+    doubleResults[who] = NewMax(data, SRV_SUBDATANUM);
 
     return NULL;
 }
@@ -200,13 +200,13 @@ void* fnThreadMax(void *arg)
 void* fnThreadSort(void* arg)
 {
     int who = *(int *)arg;
-    float data[S_SRV_SUBDATANUM];
+    double data[S_SRV_SUBDATANUM];
 
     // 索引
     int startIndex = who*S_SRV_SUBDATANUM;
     int endIndex = startIndex + S_SRV_SUBDATANUM;
 
-    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = S_rawFloatData[i];
+    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = S_rawDoubleData[i];
 
     while (!thread_begin) {}
 
@@ -225,13 +225,13 @@ int main(int argc, char const *argv[])
     srand(1);
     for (int i = 0; i < DATANUM; i++)
     {
-        rawFloatData[i] = fabsf(float(rand() + rand() + rand() + rand()));
-        if (!rawFloatData[i]) rawFloatData[i] += 1;
+        rawDoubleData[i] = fabsf(double(rand() + rand() + rand() + rand()));
+        if (!rawDoubleData[i]) rawDoubleData[i] += 1;
     }
     for (int i = 0; i < S_DATANUM; i++)
     {
-        S_rawFloatData[i] = sqrtf(sqrtf(fabsf(float(rand() + rand() + rand() + rand()))));
-        if (!S_rawFloatData[i]) S_rawFloatData[i] += 1;
+        S_rawDoubleData[i] = sqrtf(sqrtf(fabsf(double(rand() + rand() + rand() + rand()))));
+        if (!S_rawDoubleData[i]) S_rawDoubleData[i] += 1;
     }
     /* ------------------------------
      *
@@ -242,7 +242,7 @@ int main(int argc, char const *argv[])
     // ------------------------ SUM begin ------------------------
     finalSum = 0.0f;
     gettimeofday(&startv, &startz);
-    finalSum = NewSum(rawFloatData, DATANUM);
+    finalSum = NewSum(rawDoubleData, DATANUM);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     printf("Single-PC-single-thread[SUM](Server): answer = %f, time = %ld us\r\n", finalSum, t_usec);
@@ -251,7 +251,7 @@ int main(int argc, char const *argv[])
     // ------------------------ MAX begin ------------------------
     finalMax = 0.0f;
     gettimeofday(&startv, &startz);
-    finalMax = NewMax(rawFloatData, DATANUM);
+    finalMax = NewMax(rawDoubleData, DATANUM);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     printf("Single-PC-single-thread[MAX](Server): answer = %f, time = %ld us\r\n", finalMax, t_usec);
@@ -259,11 +259,11 @@ int main(int argc, char const *argv[])
 
     // ----------------------- SORT begin ------------------------
     gettimeofday(&startv, &startz);
-    NewSort(S_rawFloatData, S_DATANUM, S_sortFloatData);
+    NewSort(S_rawDoubleData, S_DATANUM, S_sortDoubleData);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
 
-    int checkRlt = check(S_sortFloatData, S_DATANUM);
+    int checkRlt = check(S_sortDoubleData, S_DATANUM);
 
     printf("Single-PC-single-thread[SORT](Server): answer = %d, time = %ld us\r\n", checkRlt, t_usec);
     // ------------------------ SORT end -------------------------
@@ -308,7 +308,7 @@ int main(int argc, char const *argv[])
 
     // 收割
     finalSum = 0.0f;
-    for (int i = 0; i < MAX_THREADS; i++) finalSum += floatResults[i];
+    for (int i = 0; i < MAX_THREADS; i++) finalSum += doubleResults[i];
 
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
@@ -327,7 +327,7 @@ int main(int argc, char const *argv[])
     for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
 
     // 收割
-    finalMax = NewMax2(floatResults, MAX_THREADS);
+    finalMax = NewMax2(doubleResults, MAX_THREADS);
 
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
@@ -346,7 +346,7 @@ int main(int argc, char const *argv[])
     merge0();
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
-    checkRlt = check(S_sortFloatData, S_DATANUM);
+    checkRlt = check(S_sortDoubleData, S_DATANUM);
     printf("Single-PC-multi-thread[SORT](Server): answer = %d, time = %ld us\r\n", checkRlt, t_usec);
     // ------------------------ SORT end -------------------------
 
@@ -420,10 +420,10 @@ int main(int argc, char const *argv[])
      * 多机多线程（Server）Code begin
      *
      * -----------------------------*/
-    float srvSum = 0.0f;
-    float cltSum = 0.0f;
-    float srvMax = 0.0f;
-    float cltMax = 0.0f;
+    double srvSum = 0.0f;
+    double cltSum = 0.0f;
+    double srvMax = 0.0f;
+    double cltMax = 0.0f;
     // ------------------------ SUM begin ------------------------
     thread_begin = false;
     for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSum, &id[i]);
@@ -436,7 +436,7 @@ int main(int argc, char const *argv[])
     for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
 
     // 收割
-    for (int i = 0; i < MAX_THREADS; i++) srvSum += floatResults[i];
+    for (int i = 0; i < MAX_THREADS; i++) srvSum += doubleResults[i];
     printf("Srv max = %f\r\n", srvSum);
 
     if ((recv_len = recv(client_fd, &cltSum, sizeof(cltSum), 0)) < 0)
@@ -462,7 +462,7 @@ int main(int argc, char const *argv[])
     for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
 
     // 收割
-    srvMax = NewMax2(floatResults, MAX_THREADS);
+    srvMax = NewMax2(doubleResults, MAX_THREADS);
 
     if ((recv_len = recv(client_fd, &cltMax, sizeof(cltSum), 0)) < 0)
     {
@@ -493,7 +493,7 @@ int main(int argc, char const *argv[])
     merge();
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
-    checkRlt = check(S_SRV_sortFloatData, S_SRV_DATANUM);
+    checkRlt = check(S_SRV_sortDoubleData, S_SRV_DATANUM);
     printf("Srv sort = %d, time = %ld\r\n", checkRlt, t_usec);
 
     memset(buf, 0, BUF_LEN);
@@ -504,7 +504,7 @@ int main(int argc, char const *argv[])
         return -1;
     }
     printf("# Send: Come on!\r\n");
-    // if ((recv_len = recv(client_fd, S_CLT_sortFloatData, S_CLT_DATANUM*sizeof(float), 0)) < 0)
+    // if ((recv_len = recv(client_fd, S_CLT_sortDoubleData, S_CLT_DATANUM*sizeof(double), 0)) < 0)
     // {
     //     printf("receive client result failed...\r\n");
     //     return -1;
@@ -512,19 +512,19 @@ int main(int argc, char const *argv[])
 
     // for (int i = 0; i < S_CLT_DATANUM; i++)
     // {
-    //     if (!S_CLT_sortFloatData[i])
+    //     if (!S_CLT_sortDoubleData[i])
     //     {
     //         printf("%d\r\n", i);
     //         break;
     //     }
 
-    //     printf("%f\r\n", S_CLT_sortFloatData[i]);
+    //     printf("%f\r\n", S_CLT_sortDoubleData[i]);
     // }
 
-    float *p = S_CLT_sortFloatData;
+    double *p = S_CLT_sortDoubleData;
     for (int i = 0; i < S_TIMES; i++)
     {
-        if ((recv_len = recv(client_fd, p, S_ONCE*sizeof(float), 0)) < 0)
+        if ((recv_len = recv(client_fd, p, S_ONCE*sizeof(double), 0)) < 0)
         {
             printf("receive client result failed...\r\n");
             return -1;
@@ -534,7 +534,7 @@ int main(int argc, char const *argv[])
     }
     if (S_LEFT)
     {
-        if ((recv_len = recv(client_fd, p, S_LEFT*sizeof(float), 0)) < 0)
+        if ((recv_len = recv(client_fd, p, S_LEFT*sizeof(double), 0)) < 0)
         {
             printf("receive result failed...\r\n");
             return -1;
@@ -545,11 +545,11 @@ int main(int argc, char const *argv[])
     merge2();
     // for (int i = 0; i < 16450; i++)
     // {
-    //     printf("%f\r\n", S_sortFloatData[i]);
+    //     printf("%f\r\n", S_sortDoubleData[i]);
     // }
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
-    checkRlt = check(S_sortFloatData, S_DATANUM);
+    checkRlt = check(S_sortDoubleData, S_DATANUM);
     printf("Multi-PC-multi-thread[SORT](Server): answer = %d, time = %ld us\r\n", checkRlt, t_usec);
     // ------------------------ SORT end -------------------------
 
