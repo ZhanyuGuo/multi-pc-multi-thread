@@ -57,6 +57,7 @@ double S_rawDoubleData[S_DATANUM];
 double S_sortDoubleData[S_DATANUM];             // 排序最终结果
 double S_CLT_sortDoubleData[S_CLT_DATANUM];     // CLT排序最终结果
 double S_threadResult[MAX_THREADS][S_SRV_SUBDATANUM];
+double S_threadResult0[MAX_THREADS][S_SUBDATANUM];
 
 #ifdef SERVER
 double S_SRV_sortDoubleData[S_SRV_DATANUM];     // SRV排序最终结果

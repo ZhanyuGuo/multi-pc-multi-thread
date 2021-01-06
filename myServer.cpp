@@ -4,7 +4,7 @@
  * Create: 2020.12.28
  * Update: 2021.1.1 
  * Author: Zhanyu Guo, Peijiang Liu.
- * Note: Single process || Multi-PC-multi-process.
+ * Note: Single thread || Multi-PC-multi-thread.
  * 
  * -----------------------------------------*/
 #define SERVER
@@ -35,6 +35,35 @@ void merge()
             }
         }
         S_SRV_sortDoubleData[j] = min_num;
+        index[min_index]++;
+    }
+}
+
+void merge0()
+{
+    int index[MAX_THREADS];
+    for (int i = 0; i < MAX_THREADS; i++)
+    {
+        index[i] = 0;
+    }
+    int min_index;
+    for (int j = 0; j < S_DATANUM; j++)
+    {
+        double min_num = DATA_MAX;
+        for (int i = 0; i < MAX_THREADS; i++)
+        {
+            if (index[i] > S_SUBDATANUM - 1)
+            {
+                continue;
+            }
+            
+            if (log10(sqrt(S_threadResult0[i][index[i]])) < min_num)
+            {
+                min_index = i;
+                min_num = log10(sqrt(S_threadResult0[i][index[i]]));
+            }
+        }
+        S_sortDoubleData[j] = min_num;
         index[min_index]++;
     }
 }
@@ -72,6 +101,61 @@ void merge2()
     }
 }
 
+void* fnThreadSum0(void *arg)
+{
+    int who = *(int *)arg;    // 线程ID
+    double data[SUBDATANUM];  // 线程数据
+    
+    // 索引
+    int startIndex = who*SUBDATANUM;
+    int endIndex = startIndex + SUBDATANUM;
+    
+    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawDoubleData[i];
+
+    // 等待发令
+    while (!thread_begin) {}
+
+    // 存储结果
+    doubleResults[who] = NewSum(data, SUBDATANUM);
+
+    return NULL;
+}
+
+void* fnThreadMax0(void *arg)
+{
+    int who = *(int *)arg;        // 线程ID
+    double data[SUBDATANUM];  // 线程数据
+    
+    // 索引
+    int startIndex = who*SUBDATANUM;
+    int endIndex = startIndex + SUBDATANUM;
+    
+    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = rawDoubleData[i];
+
+    // 等待发令
+    while (!thread_begin) {}
+
+    // 存储结果
+    doubleResults[who] = NewMax(data, SUBDATANUM);
+
+    return NULL;
+}
+
+void* fnThreadSort0(void* arg)
+{
+    int who = *(int *)arg;
+    double data[S_SUBDATANUM];
+
+    // 索引
+    int startIndex = who*S_SUBDATANUM;
+    int endIndex = startIndex + S_SUBDATANUM;
+    
+    for (int i = startIndex, j = 0; i < endIndex; i++, j++) data[j] = S_rawDoubleData[i];
+    
+    while (!thread_begin) {}
+
+    NewSort(data, S_SUBDATANUM, S_threadResult0[who]);
+}
 
 void* fnThreadSum(void *arg)
 {
@@ -151,7 +235,7 @@ int main(int argc, char const *argv[])
     }
     /* ------------------------------
      *
-     * 单线程（Server）Code begin
+     * 单机单线程（Server）Code begin
      *  
      * -----------------------------*/
 
@@ -161,7 +245,7 @@ int main(int argc, char const *argv[])
     finalSum = NewSum(rawDoubleData, DATANUM);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
-    printf("Single Process[SUM](Server): answer = %lf, time = %ld us\r\n", finalSum, t_usec);
+    printf("Single-PC-single-thread[SUM](Server): answer = %lf, time = %ld us\r\n", finalSum, t_usec);
     // ------------------------ SUM end --------------------------
 
     // ------------------------ MAX begin ------------------------
@@ -170,7 +254,7 @@ int main(int argc, char const *argv[])
     finalMax = NewMax(rawDoubleData, DATANUM);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
-    printf("Single Process[MAX](Server): answer = %lf, time = %ld us\r\n", finalMax, t_usec);
+    printf("Single-PC-single-thread[MAX](Server): answer = %lf, time = %ld us\r\n", finalMax, t_usec);
     // ------------------------ MAX end --------------------------
 
     // ----------------------- SORT begin ------------------------
@@ -181,12 +265,100 @@ int main(int argc, char const *argv[])
     
     int checkRlt = check(S_sortDoubleData, S_DATANUM);
 
-    printf("Single Process[SORT](Server): answer = %d, time = %ld us\r\n", checkRlt, t_usec);
+    printf("Single-PC-single-thread[SORT](Server): answer = %d, time = %ld us\r\n", checkRlt, t_usec);
     // ------------------------ SORT end -------------------------
 
     /* ------------------------------
      *
-     * 单线程（Server）Code end
+     * 单机单线程（Server）Code end
+     *  
+     * -----------------------------*/
+
+    /* ------------------------------
+     *
+     * 单机多线程（Server）Code begin
+     *  
+     * -----------------------------*/
+
+    // 每个线程的ID
+    int id[MAX_THREADS];
+    for (int i = 0; i < MAX_THREADS; i++) id[i] = i;
+
+    // 多线程相关
+    pthread_t tid[MAX_THREADS];
+    pthread_attr_t attr;
+    size_t stacksize;
+
+    // 更改栈的大小
+    pthread_attr_init(&attr);
+    pthread_attr_getstacksize(&attr, &stacksize);
+    stacksize *= 4;
+    pthread_attr_setstacksize(&attr, stacksize);
+
+    // ------------------------ SUM begin ------------------------
+    thread_begin = false;
+    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSum0, &id[i]);
+
+    // 给多个线程同时发令
+    gettimeofday(&startv, &startz);
+    thread_begin = true;
+
+    // 等待线程运行结束
+    for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
+
+    // 收割
+    finalSum = 0.0f;
+    for (int i = 0; i < MAX_THREADS; i++) finalSum += doubleResults[i];
+
+    gettimeofday(&endv, &endz);
+    t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
+    printf("Single-PC-multi-thread[SUM](Server): answer = %f, time = %ld us\r\n", finalSum, t_usec);
+    // ------------------------ SUM end --------------------------
+
+    // ------------------------ MAX begin ------------------------
+    thread_begin = false;
+    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadMax0, &id[i]);
+
+    // 给多个线程同时发令
+    gettimeofday(&startv, &startz);
+    thread_begin = true;
+
+    // 等待线程运行结束
+    for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
+
+    // 收割
+    finalMax = NewMax2(doubleResults, MAX_THREADS);
+
+    gettimeofday(&endv, &endz);
+    t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
+    printf("Single-PC-multi-thread[MAX](Server): answer = %f, time = %ld us\r\n", finalMax, t_usec);
+    // ------------------------ MAX end --------------------------
+    
+    // ----------------------- SORT begin ------------------------
+    thread_begin = false;
+    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSort0, &id[i]);
+
+    gettimeofday(&startv, &startz);
+    thread_begin = true;
+
+    for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
+
+    merge0();
+    gettimeofday(&endv, &endz);
+    t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
+    checkRlt = check(S_sortDoubleData, S_DATANUM);
+    printf("Single-PC-multi-thread[SORT](Server): answer = %d, time = %ld us\r\n", checkRlt, t_usec);
+    // ------------------------ SORT end -------------------------
+
+    /* ------------------------------
+     *
+     * 单机多线程（Server）Code end
+     *  
+     * -----------------------------*/
+
+    /* ------------------------------
+     *
+     * 网络设置（Server）Code begin
      *  
      * -----------------------------*/
 
@@ -239,6 +411,12 @@ int main(int argc, char const *argv[])
 
     /* ------------------------------
      *
+     * 网络设置（Server）Code end
+     *  
+     * -----------------------------*/
+
+    /* ------------------------------
+     *
      * 多机多线程（Server）Code begin
      *  
      * -----------------------------*/
@@ -246,22 +424,6 @@ int main(int argc, char const *argv[])
     double cltSum = 0.0f;
     double srvMax = 0.0f;
     double cltMax = 0.0f;
-
-    // 给每个线程初始化ID
-    int id[MAX_THREADS];
-    for (int i = 0; i < MAX_THREADS; i++) id[i] = i;
-    
-    // 多线程相关
-    pthread_t tid[MAX_THREADS];
-    pthread_attr_t attr;
-    size_t stacksize;
-
-    // 更改栈的大小
-    pthread_attr_init(&attr);
-    pthread_attr_getstacksize(&attr, &stacksize);
-    stacksize *= 4;
-    pthread_attr_setstacksize(&attr, stacksize);
-
     // ------------------------ SUM begin ------------------------
     thread_begin = false;
     for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSum, &id[i]);
@@ -284,7 +446,7 @@ int main(int argc, char const *argv[])
     finalSum = srvSum + cltSum;
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
-    printf("Multi-PC-multi-Process[SUM](Server): answer = %f, time = %ld us\r\n", finalSum, t_usec);
+    printf("Multi-PC-multi-thread[SUM](Server): answer = %f, time = %ld us\r\n", finalSum, t_usec);
     // ------------------------ SUM end --------------------------
 
     // ------------------------ MAX begin ------------------------
@@ -306,15 +468,11 @@ int main(int argc, char const *argv[])
         printf("receive client result failed...\r\n");
         return -1;
     }
-    const int tmp_len = 2;
-    double temp[tmp_len];
-    temp[0] = srvMax;
-    temp[1] = cltMax;
     printf("Srv max = %lf\r\n", srvMax);
-    finalMax = NewMax2(temp, tmp_len);
+    finalMax = srvMax > cltMax ? srvMax : cltMax;
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
-    printf("Multi-PC-multi-Process[MAX](Server): answer = %f, time = %ld us\r\n", finalMax, t_usec);
+    printf("Multi-PC-multi-thread[MAX](Server): answer = %f, time = %ld us\r\n", finalMax, t_usec);
     // ------------------------ MAX end --------------------------
     
     // ----------------------- SORT begin ------------------------
@@ -370,7 +528,7 @@ int main(int argc, char const *argv[])
             printf("receive client result failed...\r\n");
             return -1;
         }
-        // printf("%d, %lf\r\n", recv_len, *p);
+        printf("%d, %lf\r\n", recv_len, *p);
         p += S_ONCE;
     }
     if (S_LEFT)
@@ -380,7 +538,7 @@ int main(int argc, char const *argv[])
             printf("receive result failed...\r\n");
             return -1;
         }
-        // printf("%d, %lf\r\n", recv_len, *p);
+        printf("%d, %lf\r\n", recv_len, *p);
     }
     
     merge2();
@@ -391,7 +549,7 @@ int main(int argc, char const *argv[])
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     checkRlt = check(S_sortDoubleData, S_DATANUM);
-    printf("Multi-PC-multi-Process[SORT](Server): answer = %d, time = %ld us\r\n", checkRlt, t_usec);
+    printf("Multi-PC-multi-thread[SORT](Server): answer = %d, time = %ld us\r\n", checkRlt, t_usec);
     // ------------------------ SORT end -------------------------
 
     /* ------------------------------

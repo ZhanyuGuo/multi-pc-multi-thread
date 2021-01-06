@@ -19,7 +19,7 @@ Gitee 是 OSCHINA 推出的基于 Git 的代码托管平台（同时支持 SVN�
 #### 使用说明
 
 1.  先运行myServer: $ ./myServer
-2.  待myServer将单线程算完以后，开启网络监听。
+2.  待myServer将单机多线程算完以后，开启网络监听。
 3.  再运行myClient: $ ./myClient
 
 #### 参与贡献

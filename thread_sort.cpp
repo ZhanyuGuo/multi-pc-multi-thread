@@ -196,7 +196,7 @@ int main()
     
     // single-thread
     gettimeofday(&startv, &startz);
-    // NewSort(rawDoubleData, DATANUM, sortDoubleData);
+    NewSort(rawDoubleData, DATANUM, sortDoubleData);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     printf("test_1: cost = %ld us\r\n",t_usec);
