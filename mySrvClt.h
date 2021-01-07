@@ -12,9 +12,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include "emmintrin.h"  //sse2
-#include "tmmintrin.h"  //sse3
-#include "immintrin.h"  //好像包括了所有
+#include "emmintrin.h"  //SSE2
+#include "tmmintrin.h"  //SSE3
+#include "immintrin.h"  //ALL
 
 // 网络相关
 #define PORT        8888            // 端口号：8888
@@ -25,107 +25,90 @@
 #endif
 
 // 线程相关
-#define MAX_THREADS     64         // 线程数：64
-#define SUBDATANUM      200000     // 子块数据量：2000000
-#define SRV_SUBDATANUM  100000     // 单PC数据
-#define CLT_SUBDATANUM  100000     // 单PC数据
+#define MAX_THREADS     64          // 线程数：64
+#define SUBDATANUM      2000000     // 子块数据量：2000000
+#define SRV_SUBDATANUM  1000000     // 单PC数据
+#define CLT_SUBDATANUM  1000000     // 单PC数据
 #define DATANUM         (SUBDATANUM*MAX_THREADS)  // 总数据量：线程数x子块数据量
 
-#define S_SUBDATANUM        200000         // 由于排序找不到比较快的办法，先减少数据量进行测试
-#define S_SRV_SUBDATANUM    100000         // 单PC小数据量测试
-#define S_CLT_SUBDATANUM    100000         // 单PC小数据量测试
-#define S_DATANUM           (S_SUBDATANUM*MAX_THREADS)  // 总数据量(小)：线程数x子块数据量
-#define S_CLT_DATANUM       (S_CLT_SUBDATANUM*MAX_THREADS)
+#define S_SUBDATANUM        200         // 减少数据量进行排序
+#define S_SRV_SUBDATANUM    100         // 单PC小数据量测试
+#define S_CLT_SUBDATANUM    100         // 单PC小数据量测试
+#define S_DATANUM           (S_SUBDATANUM*MAX_THREADS)      // 总数据量(小)：线程数x子块数据量
+#define S_CLT_DATANUM       (S_CLT_SUBDATANUM*MAX_THREADS)  // CLT数据量
 
 #ifdef SERVER
-#define S_SRV_DATANUM       (S_SRV_SUBDATANUM*MAX_THREADS)
+#define S_SRV_DATANUM       (S_SRV_SUBDATANUM*MAX_THREADS)  // SRV数据量
 #endif
 
-#define S_ONCE              250                     // 一次发送250个浮点数
-#define S_TIMES             (S_CLT_DATANUM/S_ONCE)  // 总共发送250个的次数
-#define S_LEFT              (S_CLT_DATANUM%S_ONCE)  // 发送剩余不足250个的数据
+#define S_ONCE              100                         // 一次发送100个double
+#define S_TIMES             (S_CLT_DATANUM/S_ONCE)      // 总共发送100个的次数
+#define S_LEFT              (S_CLT_DATANUM%S_ONCE)      // 发送剩余不足的数据
 
-#define DATA_MAX            2147483647  // 随机数可能产生的最大值
+#define DATA_MAX            2147483647                  // 随机数可能产生的最大值
 
 // 网络收发缓存
 char buf[BUF_LEN];
 
 // 计算变量
-float rawFloatData[DATANUM];      // 原始数据
-float floatResults[MAX_THREADS];  // 各线程结果
-float finalSum;                    // 求和最终结果
-float finalMax;                    // 求最大值最终结果
+double rawDoubleData[DATANUM];      // 原始数据
+double doubleResults[MAX_THREADS];  // 各线程结果
+double finalSum;                    // 求和最终结果
+double finalMax;                    // 求最大值最终结果
 
-float S_rawFloatData[S_DATANUM];
-float S_sortFloatData[S_DATANUM];             // 排序最终结果
-float S_CLT_sortFloatData[S_CLT_DATANUM];     // CLT排序最终结果
-float S_threadResult[MAX_THREADS][S_SRV_SUBDATANUM];
-float S_threadResult0[MAX_THREADS][S_SUBDATANUM];
+double S_rawDoubleData[S_DATANUM];              // 排序原始数据
+double S_sortDoubleData[S_DATANUM];             // 排序最终结果
+double S_CLT_sortDoubleData[S_CLT_DATANUM];     // CLT排序最终结果
+double S_threadResult[MAX_THREADS][S_SRV_SUBDATANUM];   // 单机多线程各线程结果
+double S_threadResult0[MAX_THREADS][S_SUBDATANUM];      // 多机多线程各线程结果
 
 #ifdef SERVER
-float S_SRV_sortFloatData[S_SRV_DATANUM];     // SRV排序最终结果
+double S_SRV_sortDoubleData[S_SRV_DATANUM];     // SRV排序最终结果
 #endif
 
 // 标志位
 bool thread_begin;          // 线程发令标志
 
 // 不加速版本求和
-float NewSum(const float data[], const int len)
+double NewSum(const double data[], const int len)
 {
-    float rlt = 0.0f;
+    double rlt = 0.0f;
 
-    for (int i = 0; i < len; i++) rlt += log10f(sqrtf(data[i]/4.0));
+    for (int i = 0; i < len; i++) rlt += log10(sqrt(data[i]/4.0));
     
     return rlt;
 }
 
-// // SSE加速求和
-// float NewSumSSE(const float* pbuf, const int len)
-// {
-//     float sum = 0;
-//     size_t blockwidth = 4;
-//     size_t cntblock = len/blockwidth;
-//     const float* p = pbuf;
-//     const float* q;
-//     __m128 xfsload;
-//     __m128 xfssum = _mm_setzero_ps();
-//     for (size_t i = 0; i < cntblock; i++)
-//     {
-//         xfsload = _mm_sqrt_ps(_mm_sqrt_ps(_mm_load_ps(p)));//抓两个出来
-//         xfssum = _mm_add_ps(xfssum, xfsload);
-//         p += 4;
-//     }
-//     q = (const float*)&xfssum;
-//     for (size_t i = 0; i < blockwidth ; i++)
-//     {
-//         sum += q[i];
-//     }
-//     return sum;
-// }
-
 // SSE加速求和
-float NewSumSSE(const float* pbuf, const int len)
+double NewSumSSE(const double* pbuf, const int len)
 {
-    float sum = 0;
-    size_t nBlockWidth = 4;
-    size_t cntBlock = len/nBlockWidth;
-    size_t cntRem = len%nBlockWidth;
-    const float* p = pbuf;
-    const float* q;
-    __m128 xfsload;
-    __m128 xfssum = _mm_setzero_ps();
-    for (size_t i = 0; i < cntBlock; i++)
+    double sum = 0;
+
+    int nBlockWidth = 2;
+    int cntBlock = len/nBlockWidth;
+    int cntRem = len%nBlockWidth;
+
+    const double* p = pbuf;
+    const double* q;
+
+    __m128d xfsload;
+    __m128d xfssum = _mm_setzero_pd();
+
+    for (int i = 0; i < cntBlock; i++)
     {
-        xfsload = _mm_sqrt_ps(_mm_sqrt_ps(_mm_load_ps(p)));//抓两个出来
-        xfssum = _mm_add_ps(xfssum, xfsload);
+        xfsload = _mm_sqrt_pd(_mm_sqrt_pd(_mm_load_pd(p)));     // 抓两个出来
+        xfssum = _mm_add_pd(xfssum, xfsload);
         p += nBlockWidth;
     }
-    q = (const float*)&xfssum;
-    for (size_t i = 0; i < nBlockWidth ; i++)
+
+    q = (const double*)&xfssum;
+    for (int i = 0; i < nBlockWidth ; i++)
     {
         sum += q[i];
     }
-    for (size_t i = 0; i < cntRem; i++)
+
+    // 提取剩余的
+    for (int i = 0; i < cntRem; i++)
     {
         sum += p[i];
     }
@@ -134,31 +117,32 @@ float NewSumSSE(const float* pbuf, const int len)
 }
 
 // 不加速版本求最大值
-float NewMax(const float data[], const int len)
+double NewMax(const double data[], const int len)
 {
-    float max = log10f(sqrtf(data[0]/4.0));
+    double max = log10(sqrt(data[0]/4.0));
 
-    for (int i = 1; i < len; i++) if (log10f(sqrtf(data[i]/4.0)) > max) max = log10f(sqrtf(data[i]/4.0));
+    for (int i = 1; i < len; i++) if (log10(sqrt(data[i]/4.0)) > max) max = log10(sqrt(data[i]/4.0));
 
     return max;
 }
 
-// 单纯求最大值
-float NewMax_2(const float data[], const int len)
+// 单纯求最大值（用于归并结果）
+double NewMax_2(const double data[], const int len)
 {
-    float max = data[0];
+    double max = data[0];
 
     for (int i = 1; i < len; i++) if (data[i] > max) max = data[i];
 
     return max;
 }
 
-void qsort(float s[], int l, int r)
+// 快速排序算法
+void qsort(double s[], int l, int r)
 {
     if (l < r)
     {
         int i = l, j = r;
-        float x = s[i];
+        double x = s[i];
         while (i < j)
         {
             while (i < j && s[j] >= x)
@@ -184,7 +168,8 @@ void qsort(float s[], int l, int r)
     }
 }
 
-float NewSort(const float data[], const int len, float result[])
+// 不加速排序（快排）
+double NewSort(const double data[], const int len, double result[])
 {
     int l = 0, r = len - 1;
     for (int i = 0; i < len; i++)
@@ -194,10 +179,32 @@ float NewSort(const float data[], const int len, float result[])
     qsort(result, l, r);
 }
 
-int check(const float data[], const int len)
+double NewSort_0(const double data[], const int len, double result[])
 {
-    float sign;
-    float new_sign;
+    double tmp;
+
+    for (int i = 0; i < len; i++) result[i] = data[i];
+    
+    for (int i = 0; i < len; i++)
+    {
+        for (int j = 0; j < len - i - 1; j++)
+        {
+            if (log10(sqrt(result[j])) > log10(sqrt(result[j + 1])))
+            {
+                tmp = result[j];
+                result[j] = result[j + 1];
+                result[j+1] = tmp;
+            }
+        }
+    }
+}
+
+// 检验结果
+int check(const double data[], const int len)
+{
+    double sign;
+    double new_sign;
+
     sign = data[1] - data[0];
     for (int i = 1; i < len - 1; i++)
     {
