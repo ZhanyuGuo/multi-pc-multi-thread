@@ -15,7 +15,6 @@
 #include "emmintrin.h"  //sse2
 #include "tmmintrin.h"  //sse3
 #include "immintrin.h"  //好像包括了所有
-// #include <stdint.h>
 
 // 网络相关
 #define PORT        8888            // 端口号：8888
@@ -42,9 +41,9 @@
 #define S_SRV_DATANUM       (S_SRV_SUBDATANUM*MAX_THREADS)
 #endif
 
-#define S_ONCE              200                     // 一次发送8000个浮点数
-#define S_TIMES             (S_CLT_DATANUM/S_ONCE)  // 总共发送8000个的次数
-#define S_LEFT              (S_CLT_DATANUM%S_ONCE)  // 发送剩余不足8000个的数据
+#define S_ONCE              250                     // 一次发送250个浮点数
+#define S_TIMES             (S_CLT_DATANUM/S_ONCE)  // 总共发送250个的次数
+#define S_LEFT              (S_CLT_DATANUM%S_ONCE)  // 发送剩余不足250个的数据
 
 #define DATA_MAX            2147483647  // 随机数可能产生的最大值
 
@@ -75,47 +74,77 @@ float NewSum(const float data[], const int len)
 {
     float rlt = 0.0f;
 
-    for (int i = 0; i < len; i++) rlt += sqrtf(sqrtf(data[i]/4.0));
+    for (int i = 0; i < len; i++) rlt += log10f(sqrtf(data[i]/4.0));
     
     return rlt;
 }
+
+// // SSE加速求和
+// float NewSumSSE(const float* pbuf, const int len)
+// {
+//     float sum = 0;
+//     size_t blockwidth = 4;
+//     size_t cntblock = len/blockwidth;
+//     const float* p = pbuf;
+//     const float* q;
+//     __m128 xfsload;
+//     __m128 xfssum = _mm_setzero_ps();
+//     for (size_t i = 0; i < cntblock; i++)
+//     {
+//         xfsload = _mm_sqrt_ps(_mm_sqrt_ps(_mm_load_ps(p)));//抓两个出来
+//         xfssum = _mm_add_ps(xfssum, xfsload);
+//         p += 4;
+//     }
+//     q = (const float*)&xfssum;
+//     for (size_t i = 0; i < blockwidth ; i++)
+//     {
+//         sum += q[i];
+//     }
+//     return sum;
+// }
 
 // SSE加速求和
 float NewSumSSE(const float* pbuf, const int len)
 {
     float sum = 0;
-    size_t blockwidth = 4;
-    size_t cntblock = len/blockwidth;
+    size_t nBlockWidth = 4;
+    size_t cntBlock = len/nBlockWidth;
+    size_t cntRem = len%nBlockWidth;
     const float* p = pbuf;
     const float* q;
     __m128 xfsload;
     __m128 xfssum = _mm_setzero_ps();
-    for (size_t i = 0; i < cntblock; i++)
+    for (size_t i = 0; i < cntBlock; i++)
     {
         xfsload = _mm_sqrt_ps(_mm_sqrt_ps(_mm_load_ps(p)));//抓两个出来
         xfssum = _mm_add_ps(xfssum, xfsload);
-        p += 4;
+        p += nBlockWidth;
     }
     q = (const float*)&xfssum;
-    for (size_t i = 0; i < blockwidth ; i++)
+    for (size_t i = 0; i < nBlockWidth ; i++)
     {
         sum += q[i];
     }
+    for (size_t i = 0; i < cntRem; i++)
+    {
+        sum += p[i];
+    }
+
     return sum;
 }
 
 // 不加速版本求最大值
 float NewMax(const float data[], const int len)
 {
-    float max = sqrtf(sqrtf(data[0]/4.0));
+    float max = log10f(sqrtf(data[0]/4.0));
 
-    for (int i = 1; i < len; i++) if (sqrtf(sqrtf(data[i]/4.0)) > max) max = sqrtf(sqrtf(data[i]/4.0));
+    for (int i = 1; i < len; i++) if (log10f(sqrtf(data[i]/4.0)) > max) max = log10f(sqrtf(data[i]/4.0));
 
     return max;
 }
 
 // 单纯求最大值
-float NewMax2(const float data[], const int len)
+float NewMax_2(const float data[], const int len)
 {
     float max = data[0];
 

@@ -2,7 +2,7 @@
  *
  * File_name: myServer.cpp
  * Create: 2020.12.28
- * Update: 2021.1.6
+ * Update: 2021.1.7
  * Author: Zhanyu Guo, Peijiang Liu.
  * Note: Single thread || Multi-PC-multi-thread.
  *
@@ -20,7 +20,7 @@ void merge()
     int min_index;
     for (int j = 0; j < S_SRV_DATANUM; j++)
     {
-        float min_num = sqrtf(sqrtf(DATA_MAX));
+        float min_num = log10f(sqrtf(DATA_MAX));
         for (int i = 0; i < MAX_THREADS; i++)
         {
             if (index[i] > S_SRV_SUBDATANUM - 1)
@@ -39,7 +39,7 @@ void merge()
     }
 }
 
-void merge0()
+void merge_0()
 {
     int index[MAX_THREADS];
     for (int i = 0; i < MAX_THREADS; i++)
@@ -49,7 +49,7 @@ void merge0()
     int min_index;
     for (int j = 0; j < S_DATANUM; j++)
     {
-        float min_num = sqrtf(sqrtf(DATA_MAX));
+        float min_num = log10f(sqrtf(DATA_MAX));
         for (int i = 0; i < MAX_THREADS; i++)
         {
             if (index[i] > S_SUBDATANUM - 1)
@@ -68,7 +68,7 @@ void merge0()
     }
 }
 
-void merge2()
+void merge_2()
 {
     int srv = 0, clt = 0, cnt = 0;
     while (srv < S_SRV_DATANUM && clt < S_CLT_DATANUM)
@@ -101,7 +101,7 @@ void merge2()
     }
 }
 
-void* fnThreadSum0(void *arg)
+void* fnThreadSum_0(void *arg)
 {
     int who = *(int *)arg;    // 线程ID
     float data[SUBDATANUM];  // 线程数据
@@ -121,7 +121,7 @@ void* fnThreadSum0(void *arg)
     return NULL;
 }
 
-void* fnThreadMax0(void *arg)
+void* fnThreadMax_0(void *arg)
 {
     int who = *(int *)arg;        // 线程ID
     float data[SUBDATANUM];  // 线程数据
@@ -141,7 +141,7 @@ void* fnThreadMax0(void *arg)
     return NULL;
 }
 
-void* fnThreadSort0(void* arg)
+void* fnThreadSort_0(void* arg)
 {
     int who = *(int *)arg;
     float data[S_SUBDATANUM];
@@ -228,9 +228,10 @@ int main(int argc, char const *argv[])
         rawFloatData[i] = fabsf(float(rand() + rand() + rand() + rand()));
         if (!rawFloatData[i]) rawFloatData[i] += 1;
     }
+
     for (int i = 0; i < S_DATANUM; i++)
     {
-        S_rawFloatData[i] = sqrtf(sqrtf(fabsf(float(rand() + rand() + rand() + rand()))));
+        S_rawFloatData[i] = log10f(sqrtf(fabsf(float(rand() + rand() + rand() + rand()))));
         if (!S_rawFloatData[i]) S_rawFloatData[i] += 1;
     }
     /* ------------------------------
@@ -262,9 +263,7 @@ int main(int argc, char const *argv[])
     NewSort(S_rawFloatData, S_DATANUM, S_sortFloatData);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
-
     int checkRlt = check(S_sortFloatData, S_DATANUM);
-
     printf("Single-PC-single-thread[SORT](Server): answer = %d, time = %ld us\r\n", checkRlt, t_usec);
     // ------------------------ SORT end -------------------------
 
@@ -297,7 +296,7 @@ int main(int argc, char const *argv[])
 
     // ------------------------ SUM begin ------------------------
     thread_begin = false;
-    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSum0, &id[i]);
+    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSum_0, &id[i]);
 
     // 给多个线程同时发令
     gettimeofday(&startv, &startz);
@@ -317,7 +316,7 @@ int main(int argc, char const *argv[])
 
     // ------------------------ MAX begin ------------------------
     thread_begin = false;
-    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadMax0, &id[i]);
+    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadMax_0, &id[i]);
 
     // 给多个线程同时发令
     gettimeofday(&startv, &startz);
@@ -327,7 +326,7 @@ int main(int argc, char const *argv[])
     for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
 
     // 收割
-    finalMax = NewMax2(floatResults, MAX_THREADS);
+    finalMax = NewMax_2(floatResults, MAX_THREADS);
 
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
@@ -336,14 +335,14 @@ int main(int argc, char const *argv[])
 
     // ----------------------- SORT begin ------------------------
     thread_begin = false;
-    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSort0, &id[i]);
+    for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSort_0, &id[i]);
 
     gettimeofday(&startv, &startz);
     thread_begin = true;
 
     for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
 
-    merge0();
+    merge_0();
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     checkRlt = check(S_sortFloatData, S_DATANUM);
@@ -420,6 +419,7 @@ int main(int argc, char const *argv[])
      * 多机多线程（Server）Code begin
      *
      * -----------------------------*/
+
     float srvSum = 0.0f;
     float cltSum = 0.0f;
     float srvMax = 0.0f;
@@ -437,7 +437,7 @@ int main(int argc, char const *argv[])
 
     // 收割
     for (int i = 0; i < MAX_THREADS; i++) srvSum += floatResults[i];
-    printf("Srv max = %f\r\n", srvSum);
+    printf("Srv sum = %f\r\n", srvSum);
 
     if ((recv_len = recv(client_fd, &cltSum, sizeof(cltSum), 0)) < 0)
     {
@@ -462,7 +462,7 @@ int main(int argc, char const *argv[])
     for (int i = 0; i < MAX_THREADS; i++) pthread_join(tid[i], NULL);
 
     // 收割
-    srvMax = NewMax2(floatResults, MAX_THREADS);
+    srvMax = NewMax_2(floatResults, MAX_THREADS);
 
     if ((recv_len = recv(client_fd, &cltMax, sizeof(cltSum), 0)) < 0)
     {
@@ -478,9 +478,9 @@ int main(int argc, char const *argv[])
 
     // ----------------------- SORT begin ------------------------
     /* -----------------------------------------------------------
-     * 注意：TCP在单机网上一次最大传输65536字节，即8192个浮点数
+     * 注意：TCP在单机网上一次最大传输65536字节，即8192个double, 16384个float
      *
-     * 在局域网内根据网卡，一次最大传输1500字节，即187个浮点数
+     * 在局域网内根据网卡，一次最大传输1500字节，即187个double, 375个float
      * -------------------------------------------------------- */
     thread_begin = false;
     for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSort, &id[i]);
@@ -504,22 +504,6 @@ int main(int argc, char const *argv[])
         return -1;
     }
     printf("# Send: Come on!\r\n");
-    // if ((recv_len = recv(client_fd, S_CLT_sortFloatData, S_CLT_DATANUM*sizeof(float), 0)) < 0)
-    // {
-    //     printf("receive client result failed...\r\n");
-    //     return -1;
-    // }
-
-    // for (int i = 0; i < S_CLT_DATANUM; i++)
-    // {
-    //     if (!S_CLT_sortFloatData[i])
-    //     {
-    //         printf("%d\r\n", i);
-    //         break;
-    //     }
-
-    //     printf("%f\r\n", S_CLT_sortFloatData[i]);
-    // }
 
     float *p = S_CLT_sortFloatData;
     for (int i = 0; i < S_TIMES; i++)
@@ -542,11 +526,8 @@ int main(int argc, char const *argv[])
         // printf("%d, %f\r\n", recv_len, *p);
     }
 
-    merge2();
-    // for (int i = 0; i < 16450; i++)
-    // {
-    //     printf("%f\r\n", S_sortFloatData[i]);
-    // }
+    merge_2();
+
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     checkRlt = check(S_sortFloatData, S_DATANUM);

@@ -4,19 +4,16 @@
 #include "tmmintrin.h"//sse3
 #include "immintrin.h"//好像包括了所有
 #include <stdint.h>
-#include<math.h>
-#include<time.h>
+#include <math.h>
+#include <time.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include<iostream>
-
-using namespace std;
 
 #define MAX_THREADS     64      //64
-#define SUBDATANUM      1000000  //2000000
+#define SUBDATANUM      200000  //2000000
 #define DATANUM         (SUBDATANUM * MAX_THREADS)
 double rawDoubleData[DATANUM];
-float rawfloatdata[DATANUM];
+float rawFloatdata[DATANUM];
 
 // double NewSum(const double data[], const int len)
 // {
@@ -40,7 +37,7 @@ float NewSumf(const float data[], const int len)
 {
     float rlt = 0.0f;
 
-    for (int i = 0; i < len; i++) rlt += sqrtf(sqrtf(data[i]));
+    for (int i = 0; i < len; i++) rlt += sqrtf(sqrtf(sqrtf(data[i])));
     
     return rlt;
 }
@@ -70,24 +67,30 @@ float NewSumf(const float data[], const int len)
 
 float ssesumf(const float* pbuf,int len)
 {
-    float sum=0;
-    size_t blockwidth=4;
-    size_t cntblock=len/blockwidth;
-    const float* p=pbuf;
-    const float*q;
+    float sum = 0;
+    size_t blockwidth = 4;
+    size_t cntblock = len/blockwidth;
+    size_t cntrem = len%blockwidth;
+    const float* p = pbuf;
+    const float* q;
     __m128 xfsload;
-    __m128 xfssum=_mm_setzero_ps();
-    for (size_t i = 0; i <cntblock; i++)
+    __m128 xfssum = _mm_setzero_ps();
+    for (size_t i = 0; i < cntblock; i++)
     {
-        xfsload=_mm_sqrt_ps(_mm_sqrt_ps(_mm_load_ps(p)));//抓两个出来
-        xfssum=_mm_add_ps(xfssum,xfsload);
-        p+=4;
+        xfsload = _mm_sqrt_ps(_mm_sqrt_ps(_mm_sqrt_ps(_mm_load_ps(p))));//抓两个出来
+        xfssum = _mm_add_ps(xfssum,xfsload);
+        p += blockwidth;
     }
-    q=(const float*)&xfssum;
-    for (size_t i = 0; i <blockwidth ; i++)
+    q = (const float*)&xfssum;
+    for (size_t i = 0; i < blockwidth ; i++)
     {
         sum+=q[i];
     }
+    for (size_t i = 0; i < cntrem; i++)
+    {
+        sum += p[i];
+    }
+    
     return sum;
 }
 
@@ -121,14 +124,16 @@ int main()
     struct timezone startz, endz;
     long t_usec = 0;
 
+    srand(1);
     for (int i = 0; i < DATANUM; i++)
     {
-        //rawDoubleData[i] = double(i%100);
-        rawfloatdata[i] = float(i);
+        rawFloatdata[i] = float(abs(rand() + rand() + rand() + rand())&0xff);
+        if (!rawFloatdata[i]) rawFloatdata[i] += 1;
+        // printf("%f\r\n", rawFloatdata[i]);
     }
     float finalResult = 0.0f;
     gettimeofday(&startv, &startz);
-    finalResult = NewSumf(rawfloatdata, DATANUM);
+    finalResult = NewSumf(rawFloatdata, DATANUM);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     printf("test_1: answer = %f, cost = %ld us\r\n", finalResult, t_usec);
@@ -136,7 +141,7 @@ int main()
 
     finalResult = 0.0f;
     gettimeofday(&startv, &startz);
-    finalResult = ssesumf(rawfloatdata, DATANUM);
+    finalResult = ssesumf(rawFloatdata, DATANUM);
     gettimeofday(&endv, &endz);
     t_usec = (endv.tv_sec - startv.tv_sec)*1000000 + (endv.tv_usec - startv.tv_usec);
     printf("test_2: answer = %f, cost = %ld us\r\n", finalResult, t_usec);
