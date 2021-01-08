@@ -211,7 +211,7 @@ int check(const double data[], const int len)
         new_sign = data[i + 1] - data[i];
         if (new_sign*sign < 0)
         {
-            printf("i = %d, %f, %f\r\n", i, data[i], data[i + 1]);
+            // printf("i = %d, %f, %f\r\n", i, data[i], data[i + 1]);
             return 0;
         }
     }
