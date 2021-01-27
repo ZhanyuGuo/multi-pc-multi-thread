@@ -2,9 +2,9 @@
  *
  * File_name: myServer.cpp
  * Create: 2020.12.28
- * Update: 2021.1.7
+ * Update: 2021.1.27
  * Author: Zhanyu Guo, Peijiang Liu.
- * Note: Single thread || Multi-PC-multi-thread.
+ * Note: single-thread || single-pc-multi-thread || multi-PC-multi-thread.
  *
  * -----------------------------------------*/
 #define SERVER
@@ -229,6 +229,7 @@ int main(int argc, char const *argv[])
         if (!rawDoubleData[i]) rawDoubleData[i] += 1;
     }
 
+    // 单独生成排序所需要的数据，以免冒泡法排序时耗时过长
     for (int i = 0; i < S_DATANUM; i++)
     {
         S_rawDoubleData[i] = log10(sqrt(fabs(double(rand() + rand() + rand() + rand()))));
@@ -281,6 +282,7 @@ int main(int argc, char const *argv[])
 
     // 每个线程的ID
     int id[MAX_THREADS];
+    // 给每个线程一个ID号地址，保证ID号在创建线程时不会发生冲突
     for (int i = 0; i < MAX_THREADS; i++) id[i] = i;
 
     // 多线程相关
@@ -478,9 +480,9 @@ int main(int argc, char const *argv[])
 
     // ----------------------- SORT begin ------------------------
     /* -----------------------------------------------------------
-     * 注意：TCP在单机网上一次最大传输65536字节，即8192个double, 16384个double
+     * 注意：TCP在单机网上一次最大传输65536字节，即8192个float, 16384个double
      *
-     * 在局域网内根据网卡，一次最大传输1500字节，即187个double, 375个double
+     * 在局域网内根据网卡，一次最大传输1500字节，即187个float, 375个double
      * -------------------------------------------------------- */
     thread_begin = false;
     for (int i = 0; i < MAX_THREADS; i++) pthread_create(&tid[i], &attr, fnThreadSort, &id[i]);

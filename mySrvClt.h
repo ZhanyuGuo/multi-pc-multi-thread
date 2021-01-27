@@ -2,11 +2,11 @@
 #define __MY_SRVCLT_H
 
 #include <stdio.h>
-#include <stdlib.h>
+// #include <stdlib.h>
 #include <sys/time.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
+// #include <sys/types.h>
+// #include <sys/socket.h>
+// #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <string.h>
