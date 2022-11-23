@@ -11,6 +11,11 @@
         "*.tpp": "cpp",
         "ratio": "cpp",
         "thread": "cpp",
-        "texture": "cpp"
-    }
+        "texture": "cpp",
+        "iosfwd": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "utility": "cpp"
+    },
+    "ros.distro": "noetic"
 }
