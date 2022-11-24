@@ -8,8 +8,8 @@
 
 矩阵类名: MyMatrix，支持一下使用方法
 MyMatrix<int> temp;
-MyMatrix<double> temp(m,n)）;//构造m*n的空矩阵
-MyMatrix<int> temp(buffer,m,n);//把buffer转换成m*n矩阵
+MyMatrix<double> temp(m,n);     //构造m*n的空矩阵
+MyMatrix<int> temp(buffer,m,n); //把buffer转换成m*n矩阵
 
 MyMatrix<int> temp2(temp);
 MyMatrix<int> temp3;
