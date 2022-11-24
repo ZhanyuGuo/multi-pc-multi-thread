@@ -37,11 +37,11 @@ private:
     void deleteMatrix();
 
 public:
-    // 构造
-    MyMatrix();                                // 默认构造
+    // 构造函数
+    MyMatrix();                                // 无参构造
     MyMatrix(int size);                        // 方阵构造
     MyMatrix(int row, int column);             // 一般矩阵构造
-    MyMatrix(T **buffer, int row, int column); // 把buffer转换成m*n矩阵
+    MyMatrix(T **buffer, int row, int column); // 把buffer转换成m*n的矩阵
     MyMatrix(const MyMatrix &otherMatrix);     // 复制构造
     static MyMatrix random(int row, int column, int upper);
 
@@ -62,6 +62,7 @@ public:
     MyMatrix multiply(const double num) const;
     MyMatrix multiply(const MyMatrix &otherMatrix) const;
     MyMatrix multiply_jki(const MyMatrix &otherMatrix) const;
+    MyMatrix multiply_ikj(const MyMatrix &otherMatrix) const;
     MyMatrix transpose();
 
     MyMatrix operator+(const MyMatrix &otherMatrix) const;
@@ -268,12 +269,13 @@ MyMatrix<T> MyMatrix<T>::multiply(const MyMatrix &otherMatrix) const
     {
         for (size_t j = 0; j < otherMatrix.getColumn(); j++)
         {
-            T sum = 0;
+            // T sum = 0;
             for (size_t k = 0; k < m_column; k++)
             {
-                sum += m_data[i][k] * otherMatrix.getData(k, j);
+                // sum += m_data[i][k] * otherMatrix.getData(k, j);
+                result.setData(i, j, result.getData(i, j) + m_data[i][k] * otherMatrix.getData(k, j));
             }
-            result.setData(i, j, sum);
+            // result.setData(i, j, sum);
         }
     }
 
@@ -300,12 +302,44 @@ MyMatrix<T> MyMatrix<T>::multiply_jki(const MyMatrix &otherMatrix) const
             for (size_t i = 0; i < m_row; i++)
             {
                 buff[i] += m_data[i][k] * s;
-                // result.setData(i, j, result.getData(i, j) + m_data[i][k] * s);  // slow?
+                // result.setData(i, j, result.getData(i, j) + m_data[i][k] * otherMatrix.getData(k, j));  // slow?
             }
         }
         for (size_t i = 0; i < m_row; i++)
         {
             result.setData(i, j, buff[i]);
+        }
+    }
+
+    return result;
+}
+
+template <typename T>
+MyMatrix<T> MyMatrix<T>::multiply_ikj(const MyMatrix &otherMatrix) const
+{
+    MyMatrix result(m_row, otherMatrix.getColumn());
+    if (m_column != otherMatrix.getRow())
+    {
+        cout << "SIZE ERROR!" << endl;
+        return *this;
+    }
+
+    for (size_t i = 0; i < m_row; i++)
+    {
+        T buff[otherMatrix.getColumn()] = {0};
+        for (size_t k = 0; k < m_column; k++)
+        {
+            T s = m_data[i][k];
+
+            for (size_t j = 0; j < otherMatrix.getColumn(); j++)
+            {
+                buff[j] += s * otherMatrix.getData(k, j);
+                // result.setData(i, j, result.getData(i, j) + m_data[i][k] * otherMatrix.getData(k, j));
+            }
+        }
+        for (size_t j = 0; j < otherMatrix.getColumn(); j++)
+        {
+            result.setData(i, j, buff[j]);
         }
     }
 
