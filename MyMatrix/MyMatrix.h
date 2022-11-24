@@ -29,18 +29,21 @@ public:
 template <typename T>
 MyMatrix<T>::MyMatrix() : m_row(0), m_column(0)
 {
+    printf("Default: (0, 0)\n");
     initMatrix();
 }
 
 template <typename T>
 MyMatrix<T>::MyMatrix(int size) : m_row(size), m_column(size)
 {
+    printf("Eye: (%d, %d)\n", size, size);
     initMatrix();
 }
 
 template <typename T>
 MyMatrix<T>::MyMatrix(int row, int column) : m_row(row), m_column(column)
 {
+    printf("Normal: (%d, %d)\n", row, column);
     initMatrix();
 }
 
@@ -55,6 +58,7 @@ MyMatrix<T>::MyMatrix(int row, int column, T array) : m_row(row), m_column(colum
 template <typename T>
 MyMatrix<T>::~MyMatrix()
 {
+    printf("Destructor: (%d, %d)\n", m_row, m_column);
     deleteMatrix();
 }
 
