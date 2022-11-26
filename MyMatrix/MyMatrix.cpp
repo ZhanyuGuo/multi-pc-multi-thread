@@ -82,7 +82,7 @@ int main(int argc, char const *argv[])
           << mat4 << endl;
 
      // 12. 乘法加速
-     int size = 1000;
+     int size = 500;
      MyMatrix<int> a = MyMatrix<int>::random(size, size, 10);
      MyMatrix<int> b = MyMatrix<int>::random(size, size, 10);
 

@@ -65,6 +65,7 @@ public:
     MyMatrix multiply_ikj(const MyMatrix &otherMatrix) const;
     MyMatrix transpose();
 
+    // 重载运算符
     MyMatrix operator+(const MyMatrix &otherMatrix) const;
     MyMatrix operator+=(const MyMatrix &otherMatrix);
     MyMatrix operator-(const MyMatrix &otherMatrix) const;
@@ -74,6 +75,8 @@ public:
     MyMatrix operator*(const MyMatrix &otherMatrix) const;
     MyMatrix operator*=(const MyMatrix &otherMatrix);
     MyMatrix &operator=(const MyMatrix &otherMatrix); // 动态内存分配
+
+    // 重载<<的函数在本文件的最后
 };
 
 template <typename T>

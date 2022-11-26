@@ -46,6 +46,7 @@ def test_CPP(lib, mode):
 
 
 def main():
+    print("Calculating...")
     # Normal
     a = MyMatrix.randMatrix(SIZE, SIZE, 10)
     b = MyMatrix.randMatrix(SIZE, SIZE, 10)

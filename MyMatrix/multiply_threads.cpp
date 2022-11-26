@@ -5,7 +5,7 @@
 #include "MyMatrix.hpp"
 using namespace std;
 
-#define SIZE 1000
+#define SIZE 500
 // #define MAX_THREADS SIZE *SIZE
 #define MAX_THREADS SIZE
 
@@ -13,22 +13,22 @@ MyMatrix<double> result(SIZE, SIZE);
 MyMatrix<double> a = MyMatrix<double>::random(SIZE, SIZE, 10);
 MyMatrix<double> b = MyMatrix<double>::random(SIZE, SIZE, 10);
 
-// void *fnThreadMultiply(void *arg)
-// {
-//     int who = *(int *)arg; // 线程ID
-//     int i = who / SIZE;
-//     int j = who % SIZE;
-//     int sum = 0;
-//     for (size_t k = 0; k < SIZE; k++)
-//     {
-//         sum += a.getData(i, k) * b.getData(k, j);
-//     }
-//     result.setData(i, j, sum);
+void *fnThreadMultiply_all_divide(void *arg)
+{
+    int who = *(int *)arg; // 线程ID
+    int i = who / SIZE;
+    int j = who % SIZE;
+    int sum = 0;
+    for (size_t k = 0; k < SIZE; k++)
+    {
+        sum += a.getData(i, k) * b.getData(k, j);
+    }
+    result.setData(i, j, sum);
 
-//     return NULL;
-// }
+    return NULL;
+}
 
-void *fnThreadMultiply(void *arg)
+void *fnThreadMultiply_row_divide(void *arg)
 {
     int who = *(int *)arg; // 线程ID
     int i = who % SIZE;
@@ -90,7 +90,7 @@ int main(int argc, char const *argv[])
 
     start = clock();
     for (int i = 0; i < MAX_THREADS; i++)
-        pthread_create(&tid[i], &attr, fnThreadMultiply, &id[i]);
+        pthread_create(&tid[i], &attr, fnThreadMultiply_row_divide, &id[i]);
 
     for (int i = 0; i < MAX_THREADS; i++)
         pthread_join(tid[i], NULL);
