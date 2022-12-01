@@ -40,6 +40,21 @@ class MyMatrix:
 
         return result
 
+    def __str__(self):
+        ret = "["
+        for i in range(self.row):
+            if i != 0:
+                ret += " "
+            for j in range(self.column):
+                ret += str(self.data[i][j])
+                if i != self.row - 1 or j != self.column - 1:
+                    ret += ", "
+            if i != self.row - 1:
+                ret += "\n"
+        ret += "]"
+
+        return ret
+
 
 def test_CPP(lib, mode):
     return lib.multiply(SIZE, mode, False)
@@ -51,23 +66,25 @@ def main():
     a = MyMatrix.randMatrix(SIZE, SIZE, 10)
     b = MyMatrix.randMatrix(SIZE, SIZE, 10)
     start = time()
-    a.multiply(b)
+    c = a.multiply(b)
+    # print(c)
     end = time()
     time_nm = end - start
     print("normal time = {:.4f}\n".format(time_nm))
 
     # Numpy
-    a = np.random.randint(10, size=(SIZE, SIZE))
-    b = np.random.randint(10, size=(SIZE, SIZE))
+    a = np.array(a.data)
+    b = np.array(b.data)
     start = time()
-    a * b
+    c = a @ b
+    # print(c)
     end = time()
     time_np = end - start
     print("numpy time = {:.4f}".format(time_np))
     print("acc = {:.2f}\n".format(time_nm / time_np))
 
     # CPP
-    lib_name = "multiplt_test"
+    lib_name = "multiply_test"
     lib_path = os.path.join(os.path.dirname(__file__), "./{}.so".format(lib_name))
     lib = ctypes.cdll.LoadLibrary(os.path.abspath(lib_path))
     lib.multiply.restype = ctypes.c_double

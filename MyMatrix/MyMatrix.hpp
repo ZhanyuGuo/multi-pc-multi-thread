@@ -1,51 +1,55 @@
+/* ----------------------------------------------------------
+    作业1、二维矩阵库编写
+    要求：
+        a、支持不同大小的矩阵，并可以放入不同的数据类型
+        b、构造方法：(1) 默认构造；(2) 方阵构造；(3) 一般矩阵构造；(4)复制构造；
+        c、运算符重载：(1) 加法 + ；(2)减法 - ；(3) 矩阵数乘、矩阵相乘 * ；(4) 复制赋值 ；(5) 输出流运算符 <<
+        d、其他方法：(1) 获取成员；(2) 修改成员；(3) 动态内存分配
+        评分标准，功能实现60分；实现矩阵求逆和伪逆且考虑异常情况的，矩阵乘法写普通版版本和加速版本的，且加速比大于2 .0的10分；在python环境中调用自己写的程序，并和python直接实现以及调用numpy实现矩阵乘法三者进行比较和分析30分（不能直接使用时，可以借助于cython最终实现最终在python的调用）；提交源代码和工程文件（每人一份），提交的压缩包大于5MB的扣5分。
+
+    矩阵类名 : MyMatrix，支持一下使用方法
+    MyMatrix<int> temp;
+    MyMatrix<double> temp(m, n);      //构造m*n的空矩阵
+    MyMatrix<int> temp(buffer, m, n); //把buffer转换成m*n矩阵
+
+    MyMatrix<int> temp2(temp);
+    MyMatrix<int> temp3;
+    temp3 = temp; //所有元素都要拷贝过去，深拷贝
+
+    temp = temp + temp2; //同样大小的矩阵
+    temp2 = temp * 3;    //每个元素乘以3
+    temp2 = temp - 3;    //每个元素加3
+    temp *= temp3;       //支持矩阵乘法和矩阵向量乘，如果不能乘返回值
+
+    cout << temp << endl; //输出temp格式到屏幕
+---------------------------------------------------------- */
 #include <iostream>
+// #include <ctime>
+#include <sys/time.h>
+
 using namespace std;
-
-// 作业1、二维矩阵库编写
-// 要求：
-//     a、支持不同大小的矩阵，并可以放入不同的数据类型
-//     b、构造方法：(1) 默认构造；(2) 方阵构造；(3) 一般矩阵构造；(4)复制构造；
-//     c、运算符重载：(1) 加法 + ；(2)减法 - ；(3) 矩阵数乘、矩阵相乘 * ；(4) 复制赋值 ；(5) 输出流运算符 <<
-//     d、其他方法：(1) 获取成员；(2) 修改成员；(3) 动态内存分配
-//     评分标准，功能实现60分；实现矩阵求逆和伪逆且考虑异常情况的，矩阵乘法写普通版版本和加速版本的，且加速比大于2 .0的10分；在python环境中调用自己写的程序，并和python直接实现以及调用numpy实现矩阵乘法三者进行比较和分析30分（不能直接使用时，可以借助于cython最终实现最终在python的调用）；提交源代码和工程文件（每人一份），提交的压缩包大于5MB的扣5分。
-
-// 矩阵类名 : MyMatrix，支持一下使用方法
-// MyMatrix<int> temp;
-// MyMatrix<double> temp(m, n);      //构造m*n的空矩阵
-// MyMatrix<int> temp(buffer, m, n); //把buffer转换成m*n矩阵
-
-// MyMatrix<int> temp2(temp);
-// MyMatrix<int> temp3;
-// temp3 = temp; //所有元素都要拷贝过去，深拷贝
-
-// temp = temp + temp2; //同样大小的矩阵
-// temp2 = temp * 3;    //每个元素乘以3
-// temp2 = temp - 3;    //每个元素加3
-// temp *= temp3;       //支持矩阵乘法和矩阵向量乘，如果不能乘返回值
-
-// cout << temp << endl; //输出temp格式到屏幕
 
 template <typename T>
 class MyMatrix
 {
 private:
-    T **m_data;
-    int m_row;
-    int m_column;
+    T **m_data;   // 二维数据缓存
+    int m_row;    // 行数
+    int m_column; // 列数
 
     void initMatrix();
     void deleteMatrix();
 
 public:
     // 构造函数
-    MyMatrix();                                // 无参构造
-    MyMatrix(int size);                        // 方阵构造
-    MyMatrix(int row, int column);             // 一般矩阵构造
-    MyMatrix(T **buffer, int row, int column); // 把buffer转换成m*n的矩阵
-    MyMatrix(const MyMatrix &otherMatrix);     // 复制构造
-    static MyMatrix random(int row, int column, int upper);
+    MyMatrix();                                             // 无参构造
+    MyMatrix(int size);                                     // 方阵构造
+    MyMatrix(int row, int column);                          // 一般矩阵构造
+    MyMatrix(T **buffer, int row, int column);              // 把buffer转换成m*n的矩阵
+    MyMatrix(const MyMatrix &otherMatrix);                  // 复制构造
+    static MyMatrix random(int row, int column, int upper); // 随机数矩阵
 
-    // 析构
+    // 析构函数
     ~MyMatrix();
 
     // 获取成员
@@ -76,21 +80,40 @@ public:
     MyMatrix operator*=(const MyMatrix &otherMatrix);
     MyMatrix &operator=(const MyMatrix &otherMatrix); // 动态内存分配
 
-    // 重载<<的函数在本文件的最后
+    friend ostream &operator<<(ostream &out, const MyMatrix<T> &obj)
+    {
+        out << "[";
+        for (int i = 0; i < obj.getRow(); i++)
+        {
+            if (i != 0)
+                out << " ";
+            for (int j = 0; j < obj.getColumn(); j++)
+            {
+                out << obj.getData(i, j);
+                if (i != obj.getRow() - 1 || j != obj.getColumn() - 1)
+                    out << ", ";
+            }
+            if (i != obj.getRow() - 1)
+                out << endl;
+        }
+        out << "]" << endl;
+
+        return out;
+    }
 };
 
 template <typename T>
 void MyMatrix<T>::initMatrix()
 {
     m_data = new T *[m_row];
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
         m_data[i] = new T[m_column];
     }
 
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
-        for (size_t j = 0; j < m_column; j++)
+        for (int j = 0; j < m_column; j++)
         {
             m_data[i][j] = 0;
         }
@@ -100,7 +123,7 @@ void MyMatrix<T>::initMatrix()
 template <typename T>
 void MyMatrix<T>::deleteMatrix()
 {
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
         delete[] m_data[i];
     }
@@ -129,9 +152,9 @@ template <typename T>
 MyMatrix<T>::MyMatrix(T **buffer, int row, int column) : m_row(row), m_column(column)
 {
     initMatrix();
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
-        for (size_t j = 0; j < m_column; j++)
+        for (int j = 0; j < m_column; j++)
         {
             m_data[i][j] = buffer[i][j];
         }
@@ -145,9 +168,9 @@ MyMatrix<T>::MyMatrix(const MyMatrix &otherMatrix)
     m_column = otherMatrix.getColumn();
     initMatrix();
 
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
-        for (size_t j = 0; j < m_column; j++)
+        for (int j = 0; j < m_column; j++)
         {
             m_data[i][j] = otherMatrix.getData(i, j);
         }
@@ -157,9 +180,9 @@ template <typename T>
 MyMatrix<T> MyMatrix<T>::random(int row, int column, int upper)
 {
     MyMatrix<T> result(row, column);
-    for (size_t i = 0; i < row; i++)
+    for (int i = 0; i < row; i++)
     {
-        for (size_t j = 0; j < column; j++)
+        for (int j = 0; j < column; j++)
         {
             result.setData(i, j, rand() % upper);
         }
@@ -217,9 +240,9 @@ MyMatrix<T> MyMatrix<T>::add(const MyMatrix &otherMatrix) const
         cout << "SIZE ERROR!" << endl;
         return *this;
     }
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
-        for (size_t j = 0; j < m_column; j++)
+        for (int j = 0; j < m_column; j++)
             result.setData(i, j, m_data[i][j] + otherMatrix.getData(i, j));
     }
 
@@ -236,9 +259,9 @@ MyMatrix<T> MyMatrix<T>::subtract(const MyMatrix &otherMatrix) const
         return *this;
     }
 
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
-        for (size_t j = 0; j < m_column; j++)
+        for (int j = 0; j < m_column; j++)
             result.setData(i, j, m_data[i][j] - otherMatrix.getData(i, j));
     }
 
@@ -249,9 +272,9 @@ template <typename T>
 MyMatrix<T> MyMatrix<T>::multiply(const double num) const
 {
     MyMatrix result(m_row, m_column);
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
-        for (size_t j = 0; j < m_column; j++)
+        for (int j = 0; j < m_column; j++)
             result.setData(i, j, num * m_data[i][j]);
     }
 
@@ -268,12 +291,12 @@ MyMatrix<T> MyMatrix<T>::multiply(const MyMatrix &otherMatrix) const
         return *this;
     }
 
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
-        for (size_t j = 0; j < otherMatrix.getColumn(); j++)
+        for (int j = 0; j < otherMatrix.getColumn(); j++)
         {
             // T sum = 0;
-            for (size_t k = 0; k < m_column; k++)
+            for (int k = 0; k < m_column; k++)
             {
                 // sum += m_data[i][k] * otherMatrix.getData(k, j);
                 result.setData(i, j, result.getData(i, j) + m_data[i][k] * otherMatrix.getData(k, j));
@@ -295,27 +318,25 @@ MyMatrix<T> MyMatrix<T>::multiply_jki(const MyMatrix &otherMatrix) const
         return *this;
     }
 
-    for (size_t j = 0; j < otherMatrix.getColumn(); j++)
+    for (int j = 0; j < otherMatrix.getColumn(); j++)
     {
-        // T buff[m_row] = {0};
-
         T *buff = new T[m_row];
-        for (size_t s = 0; s < m_row; s++)
+        for (int s = 0; s < m_row; s++)
         {
             buff[s] = 0;
         }
 
-        for (size_t k = 0; k < m_column; k++)
+        for (int k = 0; k < m_column; k++)
         {
             T s = otherMatrix.getData(k, j);
 
-            for (size_t i = 0; i < m_row; i++)
+            for (int i = 0; i < m_row; i++)
             {
                 buff[i] += m_data[i][k] * s;
                 // result.setData(i, j, result.getData(i, j) + m_data[i][k] * otherMatrix.getData(k, j));  // slow?
             }
         }
-        for (size_t i = 0; i < m_row; i++)
+        for (int i = 0; i < m_row; i++)
         {
             result.setData(i, j, buff[i]);
         }
@@ -335,26 +356,25 @@ MyMatrix<T> MyMatrix<T>::multiply_ikj(const MyMatrix &otherMatrix) const
         return *this;
     }
 
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
-        // T buff[otherMatrix.getColumn()] = {0};
         T *buff = new T[otherMatrix.getColumn()];
-        for (size_t s = 0; s < otherMatrix.getColumn(); s++)
+        for (int s = 0; s < otherMatrix.getColumn(); s++)
         {
             buff[s] = 0;
         }
 
-        for (size_t k = 0; k < m_column; k++)
+        for (int k = 0; k < m_column; k++)
         {
             T s = m_data[i][k];
 
-            for (size_t j = 0; j < otherMatrix.getColumn(); j++)
+            for (int j = 0; j < otherMatrix.getColumn(); j++)
             {
                 buff[j] += s * otherMatrix.getData(k, j);
                 // result.setData(i, j, result.getData(i, j) + m_data[i][k] * otherMatrix.getData(k, j));
             }
         }
-        for (size_t j = 0; j < otherMatrix.getColumn(); j++)
+        for (int j = 0; j < otherMatrix.getColumn(); j++)
         {
             result.setData(i, j, buff[j]);
         }
@@ -368,9 +388,9 @@ template <typename T>
 MyMatrix<T> MyMatrix<T>::transpose()
 {
     MyMatrix<T> result(m_column, m_row);
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
-        for (size_t j = 0; j < m_column; j++)
+        for (int j = 0; j < m_column; j++)
             result.setData(j, i, m_data[i][j]);
     }
 
@@ -440,33 +460,11 @@ MyMatrix<T> &MyMatrix<T>::operator=(const MyMatrix &otherMatrix)
         initMatrix();
     }
 
-    for (size_t i = 0; i < m_row; i++)
+    for (int i = 0; i < m_row; i++)
     {
-        for (size_t j = 0; j < m_column; j++)
+        for (int j = 0; j < m_column; j++)
             m_data[i][j] = otherMatrix.getData(i, j);
     }
 
     return *this;
-}
-
-template <typename T>
-ostream &operator<<(ostream &out, const MyMatrix<T> &obj) // 输出流运算符<<
-{
-    out << "[";
-    for (size_t i = 0; i < obj.getRow(); i++)
-    {
-        if (i != 0)
-            out << " ";
-        for (size_t j = 0; j < obj.getColumn(); j++)
-        {
-            out << obj.getData(i, j);
-            if (i != obj.getRow() - 1 || j != obj.getColumn() - 1)
-                out << ", ";
-        }
-        if (i != obj.getRow() - 1)
-            out << endl;
-    }
-    out << "]" << endl;
-
-    return out;
 }

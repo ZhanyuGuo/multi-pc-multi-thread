@@ -1,8 +1,8 @@
-#include <ctime>
 #include "MyMatrix.hpp"
 
 int main(int argc, char const *argv[])
 {
+     // 随机数种子
      srand(1);
 
      // 1. 无参构造
@@ -21,6 +21,8 @@ int main(int argc, char const *argv[])
           << mat3 << endl;
 
      // 4. 把buffer转换成m*n的矩阵
+     // [1, 2, 3,
+     //  7, 8, 9]
      double **buffer;
      buffer = new double *[2];
      buffer[0] = new double[3];
@@ -85,33 +87,37 @@ int main(int argc, char const *argv[])
      int size = 500;
      MyMatrix<int> a = MyMatrix<int>::random(size, size, 10);
      MyMatrix<int> b = MyMatrix<int>::random(size, size, 10);
+     MyMatrix<int> c;
 
-     clock_t start, end;
-     double time1, time2;
+     // 计时相关
+     struct timeval startv, endv;
+     struct timezone startz, endz;
+     // 时间间隔，单位us
+     long t_usec_base = 0;
+     long t_usec_improved = 0;
 
-     start = clock();
-     // cout << a.multiply(b) << endl;
-     a.multiply(b);
-     end = clock();
-     time1 = (double)(end - start) / CLOCKS_PER_SEC;
-     printf("Method ijk: duration = %.5lfs\n", time1);
+     gettimeofday(&startv, &startz);
+     c = a.multiply(b);
+     // cout << c << endl;
+     gettimeofday(&endv, &endz);
+     t_usec_base = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
+     printf("Method ijk: duration = %ld us\n", t_usec_base);
 
-     start = clock();
-     // cout << a.multiply_jki(b) << endl;
-     a.multiply_jki(b);
-     end = clock();
-     time2 = (double)(end - start) / CLOCKS_PER_SEC;
-     printf("Method jki: duration = %.5lfs\n", time2);
-     cout << "acc = " << time1 / time2 << endl;
+     gettimeofday(&startv, &startz);
+     c = a.multiply_jki(b);
+     // cout << c << endl;
+     gettimeofday(&endv, &endz);
+     t_usec_improved = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
+     printf("Method jki: duration = %ld us\n", t_usec_improved);
+     cout << "acc = " << (double)t_usec_base / t_usec_improved << endl;
 
-     start = clock();
-     // cout << a.multiply_ikj(b) << endl;
-     a.multiply_ikj(b);
-     end = clock();
-     time2 = (double)(end - start) / CLOCKS_PER_SEC;
-     printf("Method ikj: duration = %.5lfs\n", time2);
-
-     cout << "acc = " << time1 / time2 << endl;
+     gettimeofday(&startv, &startz);
+     c = a.multiply_ikj(b);
+     // cout << c << endl;
+     gettimeofday(&endv, &endz);
+     t_usec_improved = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
+     printf("Method ikj: duration = %ld us\n", t_usec_improved);
+     cout << "acc = " << (double)t_usec_base / t_usec_improved << endl;
 
      return 0;
 }
