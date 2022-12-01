@@ -46,7 +46,7 @@ def test_CPP(lib, mode):
 
 
 def main():
-    print("Calculating...")
+    print("Calculating...(about 20s on my machine)")
     # Normal
     a = MyMatrix.randMatrix(SIZE, SIZE, 10)
     b = MyMatrix.randMatrix(SIZE, SIZE, 10)

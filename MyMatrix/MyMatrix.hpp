@@ -297,7 +297,8 @@ MyMatrix<T> MyMatrix<T>::multiply_jki(const MyMatrix &otherMatrix) const
 
     for (size_t j = 0; j < otherMatrix.getColumn(); j++)
     {
-        T buff[m_row] = {0};
+        // T buff[m_row] = {0};
+        T *buff = new T[m_row];
         for (size_t k = 0; k < m_column; k++)
         {
             T s = otherMatrix.getData(k, j);
@@ -312,6 +313,7 @@ MyMatrix<T> MyMatrix<T>::multiply_jki(const MyMatrix &otherMatrix) const
         {
             result.setData(i, j, buff[i]);
         }
+        delete[] buff;
     }
 
     return result;
@@ -329,7 +331,8 @@ MyMatrix<T> MyMatrix<T>::multiply_ikj(const MyMatrix &otherMatrix) const
 
     for (size_t i = 0; i < m_row; i++)
     {
-        T buff[otherMatrix.getColumn()] = {0};
+        // T buff[otherMatrix.getColumn()] = {0};
+        T *buff = new T[otherMatrix.getColumn()];
         for (size_t k = 0; k < m_column; k++)
         {
             T s = m_data[i][k];
@@ -344,6 +347,7 @@ MyMatrix<T> MyMatrix<T>::multiply_ikj(const MyMatrix &otherMatrix) const
         {
             result.setData(i, j, buff[j]);
         }
+        delete[] buff;
     }
 
     return result;
