@@ -1,45 +1,23 @@
-#include <iostream>
+#include <sys/time.h>
 #include <pthread.h>
 #include "MyMatrix.hpp"
-using namespace std;
 
-#define SIZE 500
-// #define MAX_THREADS SIZE *SIZE
+#define SIZE 2000
 #define MAX_THREADS SIZE
 
 MyMatrix<double> result(SIZE, SIZE);
 MyMatrix<double> a = MyMatrix<double>::random(SIZE, SIZE, 10);
 MyMatrix<double> b = MyMatrix<double>::random(SIZE, SIZE, 10);
-
-void *fnThreadMultiply_all_divide(void *arg)
-{
-    int who = *(int *)arg; // 线程ID
-    int i = who / SIZE;
-    int j = who % SIZE;
-    int sum = 0;
-    for (int k = 0; k < SIZE; k++)
-    {
-        sum += a.getData(i, k) * b.getData(k, j);
-    }
-    result.setData(i, j, sum);
-
-    return NULL;
-}
+MyMatrix<double> c;
 
 void *fnThreadMultiply_row_divide(void *arg)
 {
     int who = *(int *)arg; // 线程ID
-    int i = who % SIZE;
+    int i = who;
 
     for (int j = 0; j < SIZE; j++)
-    {
-        int sum = 0;
         for (int k = 0; k < SIZE; k++)
-        {
-            sum += a.getData(i, k) * b.getData(k, j);
-        }
-        result.setData(i, j, sum);
-    }
+            result(i, j) += a(i, k) * b(k, j);
 
     return NULL;
 }
@@ -57,27 +35,20 @@ int main(int argc, char const *argv[])
 
     // ================================ method ijk ================================
     gettimeofday(&startv, &startz);
-    // cout << a.multiply(b) << endl;
-    a.multiply(b);
+    c = a.multiply(b);
+    // cout << c << endl;
     gettimeofday(&endv, &endz);
     t_usec_base = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
     printf("Method ijk: duration = %ld us\n", t_usec_base);
 
-    // ================================ method jki ================================
-    gettimeofday(&startv, &startz);
-    // cout << a.multiply_jki(b) << endl;
-    a.multiply_jki(b);
-    gettimeofday(&endv, &endz);
-    t_usec_improved = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
-    printf("Method jki: duration = %ld us\n", t_usec_improved);
-    cout << "jki acc = " << (double)t_usec_base / t_usec_improved << endl;
-
     // ================================ method threads ================================
     // 每个线程的ID
     int id[MAX_THREADS];
+
     // 给每个线程一个ID号地址，保证ID号在创建线程时不会发生冲突
     for (int i = 0; i < MAX_THREADS; i++)
         id[i] = i;
+
     // 多线程相关
     pthread_t tid[MAX_THREADS];
     pthread_attr_t attr;

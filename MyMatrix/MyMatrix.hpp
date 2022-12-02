@@ -1,5 +1,6 @@
 /* ----------------------------------------------------------
     作业1、二维矩阵库编写
+
     要求：
         a、支持不同大小的矩阵，并可以放入不同的数据类型
         b、构造方法：(1) 默认构造；(2) 方阵构造；(3) 一般矩阵构造；(4)复制构造；
@@ -24,9 +25,6 @@
     cout << temp << endl; //输出temp格式到屏幕
 ---------------------------------------------------------- */
 #include <iostream>
-// #include <ctime>
-#include <sys/time.h>
-
 using namespace std;
 
 template <typename T>
@@ -36,6 +34,7 @@ private:
     T **m_data;   // 二维数据缓存
     int m_row;    // 行数
     int m_column; // 列数
+    T temp;       // 临时变量
 
     void initMatrix();
     void deleteMatrix();
@@ -79,21 +78,22 @@ public:
     MyMatrix operator*(const MyMatrix &otherMatrix) const;
     MyMatrix operator*=(const MyMatrix &otherMatrix);
     MyMatrix &operator=(const MyMatrix &otherMatrix); // 动态内存分配
+    T &operator()(int i, int j);
 
     friend ostream &operator<<(ostream &out, const MyMatrix<T> &obj)
     {
         out << "[";
-        for (int i = 0; i < obj.getRow(); i++)
+        for (int i = 0; i < obj.m_row; i++)
         {
             if (i != 0)
                 out << " ";
-            for (int j = 0; j < obj.getColumn(); j++)
+            for (int j = 0; j < obj.m_column; j++)
             {
-                out << obj.getData(i, j);
-                if (i != obj.getRow() - 1 || j != obj.getColumn() - 1)
+                out << obj.m_data[i][j];
+                if (i != obj.m_row - 1 || j != obj.m_column - 1)
                     out << ", ";
             }
-            if (i != obj.getRow() - 1)
+            if (i != obj.m_row - 1)
                 out << endl;
         }
         out << "]" << endl;
@@ -107,26 +107,18 @@ void MyMatrix<T>::initMatrix()
 {
     m_data = new T *[m_row];
     for (int i = 0; i < m_row; i++)
-    {
         m_data[i] = new T[m_column];
-    }
 
     for (int i = 0; i < m_row; i++)
-    {
         for (int j = 0; j < m_column; j++)
-        {
             m_data[i][j] = 0;
-        }
-    }
 }
 
 template <typename T>
 void MyMatrix<T>::deleteMatrix()
 {
     for (int i = 0; i < m_row; i++)
-    {
         delete[] m_data[i];
-    }
     delete[] m_data;
 }
 
@@ -153,40 +145,29 @@ MyMatrix<T>::MyMatrix(T **buffer, int row, int column) : m_row(row), m_column(co
 {
     initMatrix();
     for (int i = 0; i < m_row; i++)
-    {
         for (int j = 0; j < m_column; j++)
-        {
             m_data[i][j] = buffer[i][j];
-        }
-    }
 }
 
 template <typename T>
 MyMatrix<T>::MyMatrix(const MyMatrix &otherMatrix)
 {
-    m_row = otherMatrix.getRow();
-    m_column = otherMatrix.getColumn();
+    m_row = otherMatrix.m_row;
+    m_column = otherMatrix.m_column;
     initMatrix();
 
     for (int i = 0; i < m_row; i++)
-    {
         for (int j = 0; j < m_column; j++)
-        {
-            m_data[i][j] = otherMatrix.getData(i, j);
-        }
-    }
+            m_data[i][j] = otherMatrix.m_data[i][j];
 }
+
 template <typename T>
 MyMatrix<T> MyMatrix<T>::random(int row, int column, int upper)
 {
     MyMatrix<T> result(row, column);
     for (int i = 0; i < row; i++)
-    {
         for (int j = 0; j < column; j++)
-        {
-            result.setData(i, j, rand() % upper);
-        }
-    }
+            result.m_data[i][j] = rand() % upper;
 
     return result;
 }
@@ -215,8 +196,9 @@ T MyMatrix<T>::getData(int i, int j) const
     if (i < 0 || i >= m_row || j < 0 || j >= m_column)
     {
         cout << "INDEX ERROR!" << endl;
-        return 0;
+        return temp;
     }
+
     return m_data[i][j];
 }
 
@@ -228,23 +210,23 @@ void MyMatrix<T>::setData(int i, int j, T data)
         cout << "INDEX ERROR!" << endl;
         return;
     }
+
     m_data[i][j] = data;
 }
 
 template <typename T>
 MyMatrix<T> MyMatrix<T>::add(const MyMatrix &otherMatrix) const
 {
-    MyMatrix result(m_row, m_column);
-    if (otherMatrix.getRow() != m_row || otherMatrix.getColumn() != m_column)
+    if (otherMatrix.m_row != m_row || otherMatrix.m_column != m_column)
     {
         cout << "SIZE ERROR!" << endl;
         return *this;
     }
+
+    MyMatrix result(m_row, m_column);
     for (int i = 0; i < m_row; i++)
-    {
         for (int j = 0; j < m_column; j++)
-            result.setData(i, j, m_data[i][j] + otherMatrix.getData(i, j));
-    }
+            result.m_data[i][j] = m_data[i][j] + otherMatrix.m_data[i][j];
 
     return result;
 }
@@ -252,18 +234,16 @@ MyMatrix<T> MyMatrix<T>::add(const MyMatrix &otherMatrix) const
 template <typename T>
 MyMatrix<T> MyMatrix<T>::subtract(const MyMatrix &otherMatrix) const
 {
-    MyMatrix result(m_row, m_column);
-    if (otherMatrix.getRow() != m_row || otherMatrix.getColumn() != m_column)
+    if (otherMatrix.m_row != m_row || otherMatrix.m_column != m_column)
     {
         cout << "SIZE ERROR!" << endl;
         return *this;
     }
 
+    MyMatrix result(m_row, m_column);
     for (int i = 0; i < m_row; i++)
-    {
         for (int j = 0; j < m_column; j++)
-            result.setData(i, j, m_data[i][j] - otherMatrix.getData(i, j));
-    }
+            result.m_data[i][j] = m_data[i][j] - otherMatrix.m_data[i][j];
 
     return result;
 }
@@ -273,10 +253,8 @@ MyMatrix<T> MyMatrix<T>::multiply(const double num) const
 {
     MyMatrix result(m_row, m_column);
     for (int i = 0; i < m_row; i++)
-    {
         for (int j = 0; j < m_column; j++)
-            result.setData(i, j, num * m_data[i][j]);
-    }
+            result.m_data[i][j] = num * m_data[i][j];
 
     return result;
 }
@@ -284,26 +262,17 @@ MyMatrix<T> MyMatrix<T>::multiply(const double num) const
 template <typename T>
 MyMatrix<T> MyMatrix<T>::multiply(const MyMatrix &otherMatrix) const
 {
-    MyMatrix result(m_row, otherMatrix.getColumn());
-    if (m_column != otherMatrix.getRow())
+    if (m_column != otherMatrix.m_row)
     {
         cout << "SIZE ERROR!" << endl;
         return *this;
     }
 
+    MyMatrix result(m_row, otherMatrix.m_column);
     for (int i = 0; i < m_row; i++)
-    {
-        for (int j = 0; j < otherMatrix.getColumn(); j++)
-        {
-            // T sum = 0;
+        for (int j = 0; j < otherMatrix.m_column; j++)
             for (int k = 0; k < m_column; k++)
-            {
-                // sum += m_data[i][k] * otherMatrix.getData(k, j);
-                result.setData(i, j, result.getData(i, j) + m_data[i][k] * otherMatrix.getData(k, j));
-            }
-            // result.setData(i, j, sum);
-        }
-    }
+                result.m_data[i][j] += m_data[i][k] * otherMatrix.m_data[k][j];
 
     return result;
 }
@@ -311,37 +280,17 @@ MyMatrix<T> MyMatrix<T>::multiply(const MyMatrix &otherMatrix) const
 template <typename T>
 MyMatrix<T> MyMatrix<T>::multiply_jki(const MyMatrix &otherMatrix) const
 {
-    MyMatrix result(m_row, otherMatrix.getColumn());
-    if (m_column != otherMatrix.getRow())
+    MyMatrix result(m_row, otherMatrix.m_column);
+    if (m_column != otherMatrix.m_row)
     {
         cout << "SIZE ERROR!" << endl;
         return *this;
     }
 
-    for (int j = 0; j < otherMatrix.getColumn(); j++)
-    {
-        T *buff = new T[m_row];
-        for (int s = 0; s < m_row; s++)
-        {
-            buff[s] = 0;
-        }
-
+    for (int j = 0; j < otherMatrix.m_column; j++)
         for (int k = 0; k < m_column; k++)
-        {
-            T s = otherMatrix.getData(k, j);
-
             for (int i = 0; i < m_row; i++)
-            {
-                buff[i] += m_data[i][k] * s;
-                // result.setData(i, j, result.getData(i, j) + m_data[i][k] * otherMatrix.getData(k, j));  // slow?
-            }
-        }
-        for (int i = 0; i < m_row; i++)
-        {
-            result.setData(i, j, buff[i]);
-        }
-        delete[] buff;
-    }
+                result.m_data[i][j] += m_data[i][k] * otherMatrix.m_data[k][j];
 
     return result;
 }
@@ -349,37 +298,17 @@ MyMatrix<T> MyMatrix<T>::multiply_jki(const MyMatrix &otherMatrix) const
 template <typename T>
 MyMatrix<T> MyMatrix<T>::multiply_ikj(const MyMatrix &otherMatrix) const
 {
-    MyMatrix result(m_row, otherMatrix.getColumn());
-    if (m_column != otherMatrix.getRow())
+    MyMatrix result(m_row, otherMatrix.m_column);
+    if (m_column != otherMatrix.m_row)
     {
         cout << "SIZE ERROR!" << endl;
         return *this;
     }
 
     for (int i = 0; i < m_row; i++)
-    {
-        T *buff = new T[otherMatrix.getColumn()];
-        for (int s = 0; s < otherMatrix.getColumn(); s++)
-        {
-            buff[s] = 0;
-        }
-
         for (int k = 0; k < m_column; k++)
-        {
-            T s = m_data[i][k];
-
-            for (int j = 0; j < otherMatrix.getColumn(); j++)
-            {
-                buff[j] += s * otherMatrix.getData(k, j);
-                // result.setData(i, j, result.getData(i, j) + m_data[i][k] * otherMatrix.getData(k, j));
-            }
-        }
-        for (int j = 0; j < otherMatrix.getColumn(); j++)
-        {
-            result.setData(i, j, buff[j]);
-        }
-        delete[] buff;
-    }
+            for (int j = 0; j < otherMatrix.m_column; j++)
+                result.m_data[i][j] += m_data[i][k] * otherMatrix.m_data[k][j];
 
     return result;
 }
@@ -389,10 +318,8 @@ MyMatrix<T> MyMatrix<T>::transpose()
 {
     MyMatrix<T> result(m_column, m_row);
     for (int i = 0; i < m_row; i++)
-    {
         for (int j = 0; j < m_column; j++)
-            result.setData(j, i, m_data[i][j]);
-    }
+            result.m_data[j][i] = m_data[i][j];
 
     return result;
 }
@@ -452,19 +379,29 @@ MyMatrix<T> MyMatrix<T>::operator*=(const MyMatrix &otherMatrix)
 template <typename T>
 MyMatrix<T> &MyMatrix<T>::operator=(const MyMatrix &otherMatrix)
 {
-    if (m_row != otherMatrix.getRow() || m_column != otherMatrix.getColumn())
+    if (m_row != otherMatrix.m_row || m_column != otherMatrix.m_column)
     {
         deleteMatrix();
-        m_row = otherMatrix.getRow();
-        m_column = otherMatrix.getColumn();
+        m_row = otherMatrix.m_row;
+        m_column = otherMatrix.m_column;
         initMatrix();
     }
 
     for (int i = 0; i < m_row; i++)
-    {
         for (int j = 0; j < m_column; j++)
-            m_data[i][j] = otherMatrix.getData(i, j);
-    }
+            m_data[i][j] = otherMatrix.m_data[i][j];
 
     return *this;
+}
+
+template <typename T>
+T &MyMatrix<T>::operator()(int i, int j)
+{
+    if (i < 0 || i >= m_row || j < 0 || j >= m_column)
+    {
+        cout << "INDEX ERROR!" << endl;
+        return temp;
+    }
+
+    return m_data[i][j];
 }
