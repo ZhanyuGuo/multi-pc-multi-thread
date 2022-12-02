@@ -1,4 +1,4 @@
-#define CLIENT
+#define SERVER
 #include "mySrvClt.hpp"
 
 void *fnThreadSum(void *arg)
@@ -27,11 +27,11 @@ void *fnThreadSum(void *arg)
 void *fnThreadSum_multiPC(void *arg)
 {
     int who = *(int *)arg;       // 线程ID
-    double data[CLT_SUBDATANUM]; // 线程数据
+    double data[SRV_SUBDATANUM]; // 线程数据
 
     // 索引
-    int startIndex = who * CLT_SUBDATANUM + SRV_SUBDATANUM * MAX_THREADS;
-    int endIndex = startIndex + CLT_SUBDATANUM;
+    int startIndex = who * SRV_SUBDATANUM;
+    int endIndex = startIndex + SRV_SUBDATANUM;
 
     for (int i = startIndex, j = 0; i < endIndex; i++, j++)
         data[j] = rawDoubleData[i];
@@ -41,7 +41,7 @@ void *fnThreadSum_multiPC(void *arg)
         ;
 
     // 存储结果
-    doubleResults[who] = sum(data, CLT_SUBDATANUM);
+    doubleResults[who] = sum(data, SRV_SUBDATANUM);
 
     return NULL;
 }
@@ -153,38 +153,52 @@ int main(int argc, char const *argv[])
      *
      * -----------------------------*/
 
-    // Client socket描述符
-    int client_fd;
+    // Server, Client socket描述符
+    int server_fd, client_fd;
     // My address, remote address
-    struct sockaddr_in remote_addr;
+    struct sockaddr_in my_addr, remote_addr;
     // 一些网络收发相关变量
-    int ret, recv_len, send_len;
+    int ret, recv_len, send_len, sin_size;
 
     // 设置地址
-    memset(&remote_addr, 0, sizeof(remote_addr));       // reset
-    remote_addr.sin_family = AF_INET;                   // IPV4
-    remote_addr.sin_addr.s_addr = inet_addr(SERVER_IP); // Server IP
-    remote_addr.sin_port = htons(PORT);                 // Port
+    memset(&my_addr, 0, sizeof(my_addr)); // reset
+    my_addr.sin_family = AF_INET;         // IPV4
+    my_addr.sin_addr.s_addr = INADDR_ANY; // Local IP
+    my_addr.sin_port = htons(PORT);       // Port
 
-    if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    if ((server_fd = socket(PF_INET, SOCK_STREAM, 0)) < 0)
     {
-        printf("create client_fd failed...\r\n");
+        printf("create server_fd failed...\r\n");
         return -1;
     }
 
-    if ((ret = connect(client_fd, (struct sockaddr *)&remote_addr, sizeof(remote_addr))) < 0)
+    if ((ret = bind(server_fd, (struct sockaddr *)&my_addr, sizeof(my_addr))) < 0)
     {
-        printf("connect failed...\r\n");
+        printf("bind server_fd failed...\r\n");
         return -1;
     }
-    printf("Connect to server!\r\n");
 
-    if ((recv_len = recv(client_fd, buf, BUF_LEN, 0)) < 0)
+    // 等待连接
+    listen(server_fd, 5);
+
+    // 只针对一个client的情况
+    sin_size = sizeof(struct sockaddr_in);
+    if ((client_fd = accept(server_fd, (struct sockaddr *)&remote_addr, (socklen_t *)&sin_size)) < 0)
     {
-        printf("client recv failed...\r\n");
+        printf("accept connection failed...\r\n");
         return -1;
     }
-    printf("# Received: %s\r\n", buf);
+    printf("# Accept client %s\r\n", inet_ntoa(remote_addr.sin_addr));
+
+    // 对Client的应答
+    memset(buf, 0, BUF_LEN);
+    sprintf(buf, "Hello Client!");
+    if ((send_len = send(client_fd, buf, strlen(buf), 0)) < 0)
+    {
+        printf("server send failed...\r\n");
+        return -1;
+    }
+    printf("# Send: Hello Client!\r\n");
 
     /* ------------------------------
      *
@@ -194,6 +208,7 @@ int main(int argc, char const *argv[])
 
     // ------------------------ SUM begin ------------------------
 
+    double srvSum = 0.0;
     double cltSum = 0.0;
 
     thread_begin = false;
@@ -201,6 +216,7 @@ int main(int argc, char const *argv[])
         pthread_create(&tid[i], &attr, fnThreadSum_multiPC, &id[i]);
 
     // 给多个线程同时发令
+    gettimeofday(&startv, &startz);
     thread_begin = true;
 
     // 等待线程运行结束
@@ -209,15 +225,18 @@ int main(int argc, char const *argv[])
 
     // 收割
     for (int i = 0; i < MAX_THREADS; i++)
-        cltSum += doubleResults[i];
-    printf("Client sum = %lf\r\n", cltSum);
+        srvSum += doubleResults[i];
+    printf("Server sum = %lf\r\n", srvSum);
 
-    if ((send_len = send(client_fd, &cltSum, sizeof(cltSum), 0)) < 0)
+    if ((recv_len = recv(client_fd, &cltSum, sizeof(cltSum), 0)) < 0)
     {
-        printf("send result failed...\r\n");
+        printf("receive client result failed...\r\n");
         return -1;
     }
-    printf("Client sum result send successfully!\r\n");
+    finalSum = srvSum + cltSum;
+    gettimeofday(&endv, &endz);
+    t_usec = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
+    printf("Multip-PC-multip-thread[SUM](Server): answer = %lf, time = %ld us\r\n", finalSum, t_usec);
 
     // ------------------------  SUM end -------------------------
 
@@ -230,6 +249,7 @@ int main(int argc, char const *argv[])
     // ------------------------ SORT end -------------------------
 
     close(client_fd);
+    close(server_fd);
 
     return 0;
 }

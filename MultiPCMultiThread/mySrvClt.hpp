@@ -69,6 +69,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 
 using namespace std;
 
