@@ -67,6 +67,7 @@ public:
     MyMatrix subtract(const MyMatrix &otherMatrix) const;
     MyMatrix multiply(const double num) const;
     MyMatrix multiply(const MyMatrix &otherMatrix) const;
+    MyMatrix multiply_acc(const MyMatrix &otherMatrix) const;
     MyMatrix multiply_jki(const MyMatrix &otherMatrix) const;
     MyMatrix multiply_ikj(const MyMatrix &otherMatrix) const;
     MyMatrix multiply_ikj_acc(const MyMatrix &otherMatrix) const;
@@ -271,6 +272,33 @@ MyMatrix<T> MyMatrix<T>::multiply(const MyMatrix &otherMatrix) const
 }
 
 template <typename T>
+MyMatrix<T> MyMatrix<T>::multiply_acc(const MyMatrix &otherMatrix) const
+{
+    assert(m_cols == otherMatrix.m_rows);
+
+    MyMatrix result(m_rows, otherMatrix.m_cols);
+    for (int i = 0; i < m_rows; i++)
+        for (int j = 0; j < otherMatrix.m_cols; j += 4)
+        {
+            T sum1, sum2, sum3, sum4;
+            sum1 = sum2 = sum3 = sum4 = 0;
+            for (int k = 0; k < m_cols; k++)
+            {
+                T s = m_data[i][k];
+                sum1 += s * otherMatrix.m_data[k][j];
+                sum2 += s * otherMatrix.m_data[k][j + 1];
+                sum3 += s * otherMatrix.m_data[k][j + 2];
+                sum4 += s * otherMatrix.m_data[k][j + 3];
+            }
+            result.m_data[i][j] = sum1;
+            result.m_data[i][j + 1] = sum2;
+            result.m_data[i][j + 2] = sum3;
+            result.m_data[i][j + 3] = sum4;
+        }
+    return result;
+}
+
+template <typename T>
 MyMatrix<T> MyMatrix<T>::multiply_jki(const MyMatrix &otherMatrix) const
 {
     assert(m_cols == otherMatrix.m_rows);
@@ -314,8 +342,13 @@ MyMatrix<T> MyMatrix<T>::multiply_ikj_acc(const MyMatrix &otherMatrix) const
         {
             T s = m_data[i][k];
 
-            for (int j = 0; j < otherMatrix.m_cols; j++)
+            for (int j = 0; j < otherMatrix.m_cols; j += 4)
+            {
                 temp[j] += s * otherMatrix.m_data[k][j];
+                temp[j + 1] += s * otherMatrix.m_data[k][j + 1];
+                temp[j + 2] += s * otherMatrix.m_data[k][j + 2];
+                temp[j + 3] += s * otherMatrix.m_data[k][j + 3];
+            }
         }
 
         for (int j = 0; j < otherMatrix.m_cols; j++)
