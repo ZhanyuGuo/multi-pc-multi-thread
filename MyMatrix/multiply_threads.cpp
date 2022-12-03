@@ -15,9 +15,18 @@ void *fnThreadMultiply_row_divide(void *arg)
     int who = *(int *)arg; // 线程ID
     int i = who;
 
+    double *temp = new double[SIZE];
+    for (int j = 0; j < SIZE; j++)
+        temp[j] = 0;
+
     for (int j = 0; j < SIZE; j++)
         for (int k = 0; k < SIZE; k++)
-            result(i, j) += a(i, k) * b(k, j);
+            temp[j] += a(i, k) * b(k, j);
+
+    for (int j = 0; j < SIZE; j++)
+        result(i, j) = temp[j];
+
+    delete[] temp;
 
     return NULL;
 }
@@ -33,6 +42,7 @@ int main(int argc, char const *argv[])
     long t_usec_base = 0;
     long t_usec_improved = 0;
 
+    cout << "Calculating...(about 80s on my machine)" << endl;
     // ================================ method ijk ================================
     gettimeofday(&startv, &startz);
     c = a.multiply(b);

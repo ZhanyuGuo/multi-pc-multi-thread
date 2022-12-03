@@ -36,6 +36,9 @@ extern "C"
         case 2:
             c = a.multiply_jki(b);
             break;
+        case 3:
+            c = a.multiply_ikj_acc(b);
+            break;
         default:
             break;
         }

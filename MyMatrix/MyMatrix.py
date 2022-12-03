@@ -4,52 +4,51 @@ import random
 import numpy as np
 from time import time
 
-
 SIZE = 500
 
 
 class MyMatrix:
-    def __init__(self, row=0, column=0):
-        self.row = row
-        self.column = column
+    def __init__(self, rows=0, cols=0):
+        self.rows = rows
+        self.cols = cols
         self.data = None
         self.initMatrix()
 
     def multiply(self, other):
-        result = MyMatrix(self.row, other.column)
+        result = MyMatrix(self.rows, other.cols)
 
-        for i in range(self.row):
-            for j in range(other.column):
-                for k in range(self.column):
+        for i in range(self.rows):
+            for j in range(other.cols):
+                for k in range(self.cols):
                     result.data[i][j] += self.data[i][k] * other.data[k][j]
 
         return result
 
     def initMatrix(self):
-        self.data = [[] for _ in range(self.row)]
-        for i in range(self.row):
-            self.data[i] = [0 for _ in range(self.column)]
+        self.data = [[] for _ in range(self.rows)]
+        for i in range(self.rows):
+            self.data[i] = [0 for _ in range(self.cols)]
 
     @staticmethod
-    def randMatrix(row, column, upper):
-        result = MyMatrix(row, column)
+    def randMatrix(rows, cols, upper):
+        result = MyMatrix(rows, cols)
 
-        for i in range(row):
-            for j in range(column):
+        for i in range(rows):
+            for j in range(cols):
                 result.data[i][j] = random.randint(0, upper - 1)
 
         return result
 
     def __str__(self):
         ret = "["
-        for i in range(self.row):
+        for i in range(self.rows):
             if i != 0:
                 ret += " "
-            for j in range(self.column):
+            for j in range(self.cols):
                 ret += str(self.data[i][j])
-                if i != self.row - 1 or j != self.column - 1:
+                if i != self.rows - 1 or j != self.cols - 1:
                     ret += ", "
-            if i != self.row - 1:
+            if i != self.rows - 1:
                 ret += "\n"
         ret += "]"
 
@@ -99,6 +98,10 @@ def main():
 
     time_cpp = test_CPP(lib, 2)
     print("cpp:jki time = {:.4f}".format(time_cpp))
+    print("acc = {:.2f}\n".format(time_nm / time_cpp))
+
+    time_cpp = test_CPP(lib, 3)
+    print("cpp:ikj acc time = {:.4f}".format(time_cpp))
     print("acc = {:.2f}\n".format(time_nm / time_cpp))
 
 
