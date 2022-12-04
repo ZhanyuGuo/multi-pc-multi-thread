@@ -63,9 +63,11 @@ public:
     void setData(int i, int j, T data);
 
     // 运算
+    MyMatrix add(const T &num) const;
     MyMatrix add(const MyMatrix &otherMatrix) const;
+    MyMatrix subtract(const T &num) const;
     MyMatrix subtract(const MyMatrix &otherMatrix) const;
-    MyMatrix multiply(const double num) const;
+    MyMatrix multiply(const T &num) const;
     MyMatrix multiply(const MyMatrix &otherMatrix) const;
     MyMatrix multiply_acc(const MyMatrix &otherMatrix) const;
     MyMatrix multiply_jki(const MyMatrix &otherMatrix) const;
@@ -75,14 +77,19 @@ public:
     MyMatrix inverse() const;
 
     // 重载运算符
+    MyMatrix operator+(const T &num) const;
     MyMatrix operator+(const MyMatrix &otherMatrix) const;
-    MyMatrix operator+=(const MyMatrix &otherMatrix);
+    MyMatrix operator-(const T &num) const;
     MyMatrix operator-(const MyMatrix &otherMatrix) const;
-    MyMatrix operator-=(const MyMatrix &otherMatrix);
-    MyMatrix operator*(const double num) const;
-    MyMatrix operator*=(const double num);
+    MyMatrix operator*(const T &num) const;
     MyMatrix operator*(const MyMatrix &otherMatrix) const;
-    MyMatrix operator*=(const MyMatrix &otherMatrix);
+
+    MyMatrix &operator+=(const T &num);
+    MyMatrix &operator+=(const MyMatrix &otherMatrix);
+    MyMatrix &operator-=(const T &num);
+    MyMatrix &operator-=(const MyMatrix &otherMatrix);
+    MyMatrix &operator*=(const T &num);
+    MyMatrix &operator*=(const MyMatrix &otherMatrix);
     MyMatrix &operator=(const MyMatrix &otherMatrix); // 动态内存分配
     T &operator()(int i, int j);
 
@@ -219,6 +226,17 @@ void MyMatrix<T>::setData(int i, int j, T data)
 }
 
 template <typename T>
+MyMatrix<T> MyMatrix<T>::add(const T &num) const
+{
+    MyMatrix result(m_rows, m_cols);
+    for (int i = 0; i < m_rows; i++)
+        for (int j = 0; j < m_cols; j++)
+            result.m_data[i][j] = m_data[i][j] + num;
+
+    return result;
+}
+
+template <typename T>
 MyMatrix<T> MyMatrix<T>::add(const MyMatrix &otherMatrix) const
 {
     assert(m_rows == otherMatrix.m_rows);
@@ -228,6 +246,17 @@ MyMatrix<T> MyMatrix<T>::add(const MyMatrix &otherMatrix) const
     for (int i = 0; i < m_rows; i++)
         for (int j = 0; j < m_cols; j++)
             result.m_data[i][j] = m_data[i][j] + otherMatrix.m_data[i][j];
+
+    return result;
+}
+
+template <typename T>
+MyMatrix<T> MyMatrix<T>::subtract(const T &num) const
+{
+    MyMatrix result(m_rows, m_cols);
+    for (int i = 0; i < m_rows; i++)
+        for (int j = 0; j < m_cols; j++)
+            result.m_data[i][j] = m_data[i][j] - num;
 
     return result;
 }
@@ -247,12 +276,12 @@ MyMatrix<T> MyMatrix<T>::subtract(const MyMatrix &otherMatrix) const
 }
 
 template <typename T>
-MyMatrix<T> MyMatrix<T>::multiply(const double num) const
+MyMatrix<T> MyMatrix<T>::multiply(const T &num) const
 {
     MyMatrix result(m_rows, m_cols);
     for (int i = 0; i < m_rows; i++)
         for (int j = 0; j < m_cols; j++)
-            result.m_data[i][j] = num * m_data[i][j];
+            result.m_data[i][j] = m_data[i][j] * num;
 
     return result;
 }
@@ -447,16 +476,35 @@ void MyMatrix<T>::rowSwap(int src, int dst)
 }
 
 template <typename T>
+MyMatrix<T> MyMatrix<T>::operator+(const T &num) const
+{
+    return add(num);
+}
+
+template <typename T>
 MyMatrix<T> MyMatrix<T>::operator+(const MyMatrix &otherMatrix) const
 {
     return add(otherMatrix);
 }
 
 template <typename T>
-MyMatrix<T> MyMatrix<T>::operator+=(const MyMatrix &otherMatrix)
+MyMatrix<T> &MyMatrix<T>::operator+=(const T &num)
+{
+    *this = add(num);
+    return *this;
+}
+
+template <typename T>
+MyMatrix<T> &MyMatrix<T>::operator+=(const MyMatrix &otherMatrix)
 {
     *this = add(otherMatrix);
     return *this;
+}
+
+template <typename T>
+MyMatrix<T> MyMatrix<T>::operator-(const T &num) const
+{
+    return subtract(num);
 }
 
 template <typename T>
@@ -466,20 +514,27 @@ MyMatrix<T> MyMatrix<T>::operator-(const MyMatrix &otherMatrix) const
 }
 
 template <typename T>
-MyMatrix<T> MyMatrix<T>::operator-=(const MyMatrix &otherMatrix)
+MyMatrix<T> &MyMatrix<T>::operator-=(const T &num)
+{
+    *this = subtract(num);
+    return *this;
+}
+
+template <typename T>
+MyMatrix<T> &MyMatrix<T>::operator-=(const MyMatrix &otherMatrix)
 {
     *this = subtract(otherMatrix);
     return *this;
 }
 
 template <typename T>
-MyMatrix<T> MyMatrix<T>::operator*(const double num) const
+MyMatrix<T> MyMatrix<T>::operator*(const T &num) const
 {
     return multiply(num);
 }
 
 template <typename T>
-MyMatrix<T> MyMatrix<T>::operator*=(const double num)
+MyMatrix<T> &MyMatrix<T>::operator*=(const T &num)
 {
     *this = multiply(num);
     return *this;
@@ -492,7 +547,7 @@ MyMatrix<T> MyMatrix<T>::operator*(const MyMatrix &otherMatrix) const
 }
 
 template <typename T>
-MyMatrix<T> MyMatrix<T>::operator*=(const MyMatrix &otherMatrix)
+MyMatrix<T> &MyMatrix<T>::operator*=(const MyMatrix &otherMatrix)
 {
     *this = multiply(otherMatrix);
     return *this;

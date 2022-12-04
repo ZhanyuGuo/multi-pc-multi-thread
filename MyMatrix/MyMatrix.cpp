@@ -48,44 +48,56 @@ int main(int argc, char const *argv[])
      cout << "复制构造 mat5 := mat4 = \n"
           << mat5 << endl;
 
-     // 6. 加法
+     // 6. 加减乘法（数）
+     cout << "mat4 + 66 = \n"
+          << mat4 + 66 << endl;
+     mat4 += 66;
+     cout << "mat4 += 66, mat4 = \n"
+          << mat4 << endl;
+
+     cout << "mat4 - 66 = \n"
+          << mat4 - 66 << endl;
+     mat4 -= 66;
+     cout << "mat4 -= 66, mat4 = \n"
+          << mat4 << endl;
+
+     cout << "mat4 * 66 = \n"
+          << mat4 * 66 << endl;
+     mat4 *= 66;
+     cout << "mat4 *= 66, mat4 = \n"
+          << mat4 << endl;
+
+     // 7. 加减乘法（矩阵）
+     cout << "mat4 = mat5 = \n"
+          << (mat4 = mat5) << endl;
      cout << "mat4 + mat5 = \n"
           << mat4 + mat5 << endl;
      mat4 += mat5;
-     cout << "after +=, mat4 = \n"
+     cout << "mat4 += mat5, mat4 = \n"
           << mat4 << endl;
 
-     // 7. 减法
      cout << "mat4 - mat5 = \n"
           << mat4 - mat5 << endl;
      mat4 -= mat5;
-     cout << "after -=, mat4 = \n"
+     cout << "mat4 -= mat5, mat4 = \n"
           << mat4 << endl;
 
-     // 8. 数乘
-     cout << "mat4 * 2.0 = \n"
-          << mat4 * 2.0 << endl;
-     mat4 *= 2.0;
-     cout << "after *=, mat4 = \n"
-          << mat4 << endl;
-
-     // 9. 乘法
      cout << "mat4 * mat5.T = \n"
           << mat4 * mat5.transpose() << endl;
      mat4 *= mat5.transpose();
-     cout << "after *=, mat4 = \n"
+     cout << "mat4 *= mat5.T, mat4 = \n"
           << mat4 << endl;
 
-     // 10. 获取成员
-     cout << "mat4.row = " << mat4.getRows() << endl;
+     // 8. 获取成员
+     cout << "mat4.row = " << mat4.getRows() << ", mat4.col = " << mat4.getCols() << endl;
      cout << "get mat4(0, 1) = " << mat4(0, 1) << endl;
 
-     // 11. 修改成员
+     // 9. 修改成员
      mat4(0, 1) = 666;
      cout << "set mat4(0, 1) = 666, mat4 = \n"
           << mat4 << endl;
 
-     // 12. 求逆
+     // 10. 求逆
      MyMatrix<double> mat6(3, 3);
      mat6(0, 2) = 1.0;
      mat6(1, 0) = 1.0;
@@ -105,8 +117,8 @@ int main(int argc, char const *argv[])
      cout << "mat6 * mat6.inverse = \n"
           << mat6 * mat6.inverse() << endl;
 
-     // 13. 乘法加速
-     int size = 500; // NOTE: set 2000 to test
+     // 11. 乘法加速
+     int size = 1000; // NOTE: set 2000 to test
      MyMatrix<int> a = MyMatrix<int>::random(size, size, 10);
      MyMatrix<int> b = MyMatrix<int>::random(size, size, 10);
      MyMatrix<int> c;
@@ -118,8 +130,9 @@ int main(int argc, char const *argv[])
      long t_usec_base = 0;
      long t_usec_improved = 0;
 
-     cout << "Calculating...(about 60s on my machine)" << endl;
+     cout << "Calculating...(about 60s on my machine, size=2000)" << endl;
 
+     // normal
      gettimeofday(&startv, &startz);
      c = a.multiply(b);
      // cout << c << endl;
@@ -127,6 +140,7 @@ int main(int argc, char const *argv[])
      t_usec_base = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
      printf("Method ijk: duration = %ld us\n", t_usec_base);
 
+     // normal acc, analog parallelism
      gettimeofday(&startv, &startz);
      c = a.multiply_acc(b);
      // cout << c << endl;
@@ -135,6 +149,7 @@ int main(int argc, char const *argv[])
      printf("Method ijk acc: duration = %ld us\n", t_usec_improved);
      cout << "acc = " << (double)t_usec_base / t_usec_improved << endl;
 
+     // jki
      gettimeofday(&startv, &startz);
      c = a.multiply_jki(b);
      // cout << c << endl;
@@ -143,6 +158,7 @@ int main(int argc, char const *argv[])
      printf("Method jki: duration = %ld us\n", t_usec_improved);
      cout << "acc = " << (double)t_usec_base / t_usec_improved << endl;
 
+     // ikj
      gettimeofday(&startv, &startz);
      c = a.multiply_ikj(b);
      // cout << c << endl;
@@ -151,6 +167,7 @@ int main(int argc, char const *argv[])
      printf("Method ikj: duration = %ld us\n", t_usec_improved);
      cout << "acc = " << (double)t_usec_base / t_usec_improved << endl;
 
+     // ikj acc
      gettimeofday(&startv, &startz);
      c = a.multiply_ikj_acc(b);
      // cout << c << endl;
