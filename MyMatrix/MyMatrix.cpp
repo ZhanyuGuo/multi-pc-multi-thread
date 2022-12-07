@@ -22,7 +22,7 @@ int main(int argc, char const *argv[])
           << mat3 << endl;
 
      // 4. 把buffer转换成m*n的矩阵
-     // [1, 2, 3,
+     // [1, 2, 3;
      //  7, 8, 9]
      int **buffer;
      buffer = new int *[2];
@@ -118,7 +118,7 @@ int main(int argc, char const *argv[])
           << mat6 * mat6.inverse() << endl;
 
      // 11. 乘法加速
-     int size = 1000; // NOTE: set 2000 to test
+     int size = 2000; // NOTE: set 2000 to test
      MyMatrix<int> a = MyMatrix<int>::random(size, size, 10);
      MyMatrix<int> b = MyMatrix<int>::random(size, size, 10);
      MyMatrix<int> c;
@@ -146,8 +146,7 @@ int main(int argc, char const *argv[])
      // cout << c << endl;
      gettimeofday(&endv, &endz);
      t_usec_improved = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
-     printf("Method ijk acc: duration = %ld us\n", t_usec_improved);
-     cout << "acc = " << (double)t_usec_base / t_usec_improved << endl;
+     printf("Method ijk acc: duration = %ld us, acc = %lf\n", t_usec_improved, (double)t_usec_base / t_usec_improved);
 
      // jki
      gettimeofday(&startv, &startz);
@@ -155,8 +154,7 @@ int main(int argc, char const *argv[])
      // cout << c << endl;
      gettimeofday(&endv, &endz);
      t_usec_improved = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
-     printf("Method jki: duration = %ld us\n", t_usec_improved);
-     cout << "acc = " << (double)t_usec_base / t_usec_improved << endl;
+     printf("Method jki: duration = %ld us, acc = %lf\n", t_usec_improved, (double)t_usec_base / t_usec_improved);
 
      // ikj
      gettimeofday(&startv, &startz);
@@ -164,8 +162,7 @@ int main(int argc, char const *argv[])
      // cout << c << endl;
      gettimeofday(&endv, &endz);
      t_usec_improved = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
-     printf("Method ikj: duration = %ld us\n", t_usec_improved);
-     cout << "acc = " << (double)t_usec_base / t_usec_improved << endl;
+     printf("Method ikj: duration = %ld us, acc = %lf\n", t_usec_improved, (double)t_usec_base / t_usec_improved);
 
      // ikj acc
      gettimeofday(&startv, &startz);
@@ -173,8 +170,7 @@ int main(int argc, char const *argv[])
      // cout << c << endl;
      gettimeofday(&endv, &endz);
      t_usec_improved = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
-     printf("Method ikj acc: duration = %ld us\n", t_usec_improved);
-     cout << "acc = " << (double)t_usec_base / t_usec_improved << endl;
+     printf("Method ikj acc: duration = %ld us, acc = %lf\n", t_usec_improved, (double)t_usec_base / t_usec_improved);
 
      return 0;
 }

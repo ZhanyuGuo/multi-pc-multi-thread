@@ -43,7 +43,8 @@ int main(int argc, char const *argv[])
     long t_usec_improved = 0;
 
     cout << "Calculating...(about 80s on my machine)" << endl;
-    // ================================ method ijk ================================
+    
+    // ijk
     gettimeofday(&startv, &startz);
     c = a.multiply(b);
     // cout << c << endl;
@@ -51,7 +52,7 @@ int main(int argc, char const *argv[])
     t_usec_base = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
     printf("Method ijk: duration = %ld us\n", t_usec_base);
 
-    // ================================ method threads ================================
+    // threads
     // 每个线程的ID
     int id[MAX_THREADS];
 
@@ -80,8 +81,7 @@ int main(int argc, char const *argv[])
     gettimeofday(&endv, &endz);
     t_usec_improved = (endv.tv_sec - startv.tv_sec) * 1000000 + (endv.tv_usec - startv.tv_usec);
     // cout << result << endl;
-    printf("Method threads: duration = %ld us\n", t_usec_improved);
-    cout << "threads acc = " << (double)t_usec_base / t_usec_improved << endl;
+    printf("Method threads: duration = %ld us, acc = %lf\n", t_usec_improved, (double)t_usec_base / t_usec_improved);
 
     return 0;
 }

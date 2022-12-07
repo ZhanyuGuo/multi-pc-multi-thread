@@ -57,7 +57,6 @@ public:
     // 获取成员
     int getRows() const;
     int getCols() const;
-    T getData(int i, int j) const;
 
     // 修改成员
     void setData(int i, int j, T data);
@@ -201,17 +200,6 @@ template <typename T>
 int MyMatrix<T>::getCols() const
 {
     return m_cols;
-}
-
-template <typename T>
-T MyMatrix<T>::getData(int i, int j) const
-{
-    assert(i >= 0);
-    assert(i < m_rows);
-    assert(j >= 0);
-    assert(j < m_cols);
-
-    return m_data[i][j];
 }
 
 template <typename T>

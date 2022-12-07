@@ -55,10 +55,6 @@ class MyMatrix:
         return ret
 
 
-def test_CPP(lib, mode):
-    return lib.multiply(SIZE, mode, False)
-
-
 def main():
     print("Calculating...(about 20s on my machine)")
     # Normal
@@ -69,7 +65,7 @@ def main():
     # print(c)
     end = time()
     time_nm = end - start
-    print("normal time = {:.4f}\n".format(time_nm))
+    print("python normal: duration = {:.4f} s".format(time_nm))
 
     # Numpy
     a = np.array(a.data)
@@ -79,30 +75,30 @@ def main():
     # print(c)
     end = time()
     time_np = end - start
-    print("numpy time = {:.4f}".format(time_np))
-    print("acc = {:.2f}\n".format(time_nm / time_np))
+    print("numpy: duration = {:.4f} s, acc = {:.2f}".format(
+        time_np, time_nm / time_np))
 
     # CPP
     lib_name = "multiply_test"
-    lib_path = os.path.join(os.path.dirname(__file__), "./{}.so".format(lib_name))
+    lib_path = os.path.join(os.path.dirname(__file__),
+                            "./{}.so".format(lib_name))
     lib = ctypes.cdll.LoadLibrary(os.path.abspath(lib_path))
-    lib.multiply.restype = ctypes.c_double
 
-    time_cpp = test_CPP(lib, 0)
-    print("cpp:normal time = {:.4f}".format(time_cpp))
-    print("acc = {:.2f}\n".format(time_nm / time_cpp))
+    # normal
+    start = time()
+    lib.multiply(SIZE, 0, False)
+    end = time()
+    time_cpp = end - start
+    print("cpp ijk: duration = {:.4f} s, acc = {:.2f}".format(
+        time_cpp, time_nm / time_cpp))
 
-    time_cpp = test_CPP(lib, 1)
-    print("cpp:ikj time = {:.4f}".format(time_cpp))
-    print("acc = {:.2f}\n".format(time_nm / time_cpp))
-
-    time_cpp = test_CPP(lib, 2)
-    print("cpp:jki time = {:.4f}".format(time_cpp))
-    print("acc = {:.2f}\n".format(time_nm / time_cpp))
-
-    time_cpp = test_CPP(lib, 3)
-    print("cpp:ikj acc time = {:.4f}".format(time_cpp))
-    print("acc = {:.2f}\n".format(time_nm / time_cpp))
+    # ikj acc
+    start = time()
+    lib.multiply(SIZE, 3, False)
+    end = time()
+    time_cpp = end - start
+    print("cpp ikj acc: duration = {:.4f} s, acc = {:.2f}".format(
+        time_cpp, time_nm / time_cpp))
 
 
 if __name__ == "__main__":
