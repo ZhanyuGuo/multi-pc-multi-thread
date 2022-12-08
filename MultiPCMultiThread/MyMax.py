@@ -10,11 +10,9 @@ MAX_THREADS = 64
 SUBDATANUM = 2000000
 DATANUM = MAX_THREADS * SUBDATANUM
 
-doubleResults = [0 for _ in range(MAX_THREADS)]
-
 
 def fnThreadMax(who):
-    global rawDoubleData, doubleResults, thread_results
+    global rawDoubleData, doubleResults
 
     startIndex = who * SUBDATANUM
     endIndex = startIndex + SUBDATANUM
@@ -25,8 +23,7 @@ def fnThreadMax(who):
         if a > result:
             result = a
 
-    # doubleResults[who] = result
-    thread_results[who] = result
+    doubleResults[who] = result
 
 
 def maxMerge(data):
@@ -50,7 +47,8 @@ def maxNormal(ls):
 
 def main():
     # fmt: off
-    global rawDoubleData, doubleResults, thread_results
+    global rawDoubleData, doubleResults
+
 
     # load library
     lib_name = "max_test"
@@ -62,19 +60,39 @@ def main():
     data = lib.initData()
     rawDoubleData = [data[i] for i in range(DATANUM)]
 
+    print("Calculating...(about 15s on my machine)")
     # python normal
     start = time()
     result = maxNormal(rawDoubleData)
     end = time()
     time_nm = end - start
-    print("python normal: answer = {:.3f}, duration = {:.2f} s".format(result, time_nm))
+    print("python single threads: answer = {:.3f}, duration = {:.4f} s".format(result, time_nm))
 
-    # python acc, 多线程是假的多线程，只能使用一个核，使用多进程可以加速
+    # 多线程是假的多线程，只能使用一个核，使用多进程可以加速
+    # python acc 多线程
     threads = []
-    thread_results = Array('d', [0 for _ in range(MAX_THREADS)])
+    doubleResults = [0 for _ in range(MAX_THREADS)]
     for i in range(MAX_THREADS):
-        # t = Thread(target=fnThreadMax, args=(i, ))
-        # t.setDaemon(True)
+        t = Thread(target=fnThreadMax, args=(i, ))
+        t.setDaemon(True)
+        threads.append(t)
+
+    start = time()
+    for t in threads:
+        t.start()
+
+    for t in threads:
+        t.join()
+
+    result = maxMerge(doubleResults)
+    end = time()
+    time_acc = end - start
+    print("python multip threads: answer = {:.3f}, duration = {:.4f} s".format(result, time_acc))
+
+    # python acc 多进程
+    threads = []
+    doubleResults = Array('d', [0 for _ in range(MAX_THREADS)])
+    for i in range(MAX_THREADS):
         t = Process(target=fnThreadMax, args=(i, ))
         t.daemon = True
         threads.append(t)
@@ -86,11 +104,10 @@ def main():
     for t in threads:
         t.join()
 
-    # result = maxMerge(doubleResults)
-    result = maxMerge(thread_results)
+    result = maxMerge(doubleResults)
     end = time()
     time_acc = end - start
-    print("python acc: answer = {:.3f}, duration = {:.2f} s".format(result, time_acc))
+    print("python multip process: answer = {:.3f}, duration = {:.4f} s".format(result, time_acc))
 
     # numpy
     arr = np.array(rawDoubleData)
@@ -98,7 +115,7 @@ def main():
     result = np.amax(np.log10(np.sqrt(arr)))
     end = time()
     time_np = end - start
-    print("numpy: answer = {:.3f}, duration = {:.2f} s".format(result, time_np))
+    print("numpy: answer = {:.3f}, duration = {:.4f} s".format(result, time_np))
 
     # cpp normal
     lib.maxNormal.restype = ctypes.c_double
@@ -106,7 +123,7 @@ def main():
     result = lib.maxNormal()
     end = time()
     time_cpp_normal = end - start
-    print("cpp normal: answer = {:.3f}, duration = {:.2f} s".format(result, time_cpp_normal))
+    print("cpp single thread: answer = {:.3f}, duration = {:.4f} s".format(result, time_cpp_normal))
 
     # cpp acc
     lib.maxAcc.restype = ctypes.c_double
@@ -114,7 +131,7 @@ def main():
     result = lib.maxAcc()
     end = time()
     time_cpp_acc = end - start
-    print("cpp acc: answer = {:.3f}, duration = {:.2f} s".format(result, time_cpp_acc))
+    print("cpp multip thread: answer = {:.3f}, duration = {:.4f} s".format(result, time_cpp_acc))
 
 
 if __name__ == "__main__":

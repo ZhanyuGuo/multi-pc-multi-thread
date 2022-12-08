@@ -90,9 +90,9 @@ using namespace std;
 #define CLT_SUBDATANUM 1000000             // 单PC数据
 #define DATANUM (SUBDATANUM * MAX_THREADS) // 总数据量
 
-#define S_SUBDATANUM 200                               // 减少数据量进行排序
-#define S_SRV_SUBDATANUM 100                           // 单PC小数据量测试
-#define S_CLT_SUBDATANUM 100                           // 单PC小数据量测试
+#define S_SUBDATANUM 400                               // 减少数据量进行排序
+#define S_SRV_SUBDATANUM 200                           // 单PC小数据量测试
+#define S_CLT_SUBDATANUM 200                           // 单PC小数据量测试
 #define S_DATANUM (S_SUBDATANUM * MAX_THREADS)         // 总数据量(小)：线程数x子块数据量
 #define S_CLT_DATANUM (S_CLT_SUBDATANUM * MAX_THREADS) // CLT数据量
 
@@ -100,7 +100,7 @@ using namespace std;
 #define S_SRV_DATANUM (S_SRV_SUBDATANUM * MAX_THREADS) // SRV数据量
 #endif
 
-#define S_ONCE 100                       // 一次发送100个double
+#define S_ONCE 1600                      // 一次发送100个double
 #define S_TIMES (S_CLT_DATANUM / S_ONCE) // 总共发送100个的次数
 #define S_LEFT (S_CLT_DATANUM % S_ONCE)  // 发送剩余不足的数据
 
