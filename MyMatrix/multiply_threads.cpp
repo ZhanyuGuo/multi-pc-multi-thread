@@ -43,7 +43,7 @@ int main(int argc, char const *argv[])
     long t_usec_improved = 0;
 
     cout << "Calculating...(about 80s on my machine)" << endl;
-    
+
     // ijk
     gettimeofday(&startv, &startz);
     c = a.multiply(b);

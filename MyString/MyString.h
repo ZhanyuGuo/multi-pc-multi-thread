@@ -70,7 +70,7 @@ char MyString::operator[](size_t index)
 {
     if (index < _length)
         return _str[index];
-    return NULL;
+    return 0;
 }
 
 ostream &operator<<(ostream &out, const MyString &obj)

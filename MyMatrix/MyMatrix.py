@@ -75,13 +75,11 @@ def main():
     # print(c)
     end = time()
     time_np = end - start
-    print("numpy: duration = {:.4f} s, acc = {:.2f}".format(
-        time_np, time_nm / time_np))
+    print("numpy: duration = {:.4f} s, acc = {:.2f}".format(time_np, time_nm / time_np))
 
     # CPP
     lib_name = "multiply_test"
-    lib_path = os.path.join(os.path.dirname(__file__),
-                            "./{}.so".format(lib_name))
+    lib_path = os.path.join(os.path.dirname(__file__), "./{}.so".format(lib_name))
     lib = ctypes.cdll.LoadLibrary(os.path.abspath(lib_path))
 
     # normal
@@ -89,16 +87,14 @@ def main():
     lib.multiply(SIZE, 0, False)
     end = time()
     time_cpp = end - start
-    print("cpp ijk: duration = {:.4f} s, acc = {:.2f}".format(
-        time_cpp, time_nm / time_cpp))
+    print("cpp ijk: duration = {:.4f} s, acc = {:.2f}".format(time_cpp, time_nm / time_cpp))
 
     # ikj acc
     start = time()
     lib.multiply(SIZE, 3, False)
     end = time()
     time_cpp = end - start
-    print("cpp ikj acc: duration = {:.4f} s, acc = {:.2f}".format(
-        time_cpp, time_nm / time_cpp))
+    print("cpp ikj acc: duration = {:.4f} s, acc = {:.2f}".format(time_cpp, time_nm / time_cpp))
 
 
 if __name__ == "__main__":
